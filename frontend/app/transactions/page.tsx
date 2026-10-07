@@ -8,6 +8,8 @@ import { useAuth } from "@/context/AuthContext";
 import { api, messageFromError } from "@/lib/api";
 import type { Transaction } from "@/lib/types";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api";
+
 export default function TransactionsPage() {
   const { user, token, loading } = useAuth();
   const router = useRouter();
@@ -15,6 +17,7 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [error, setError] = useState("");
   const [fetching, setFetching] = useState(true);
+  const [busyId, setBusyId] = useState<number | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -36,6 +39,39 @@ export default function TransactionsPage() {
       .finally(() => setFetching(false));
   }, [loading, user, token, router]);
 
+  async function annuler(t: Transaction) {
+    if (!confirm("Annuler cette commande ? Vous serez remboursé.")) return;
+    setBusyId(t.id);
+    setError("");
+    try {
+      await api(`/transactions/${t.id}/annuler`, { method: "POST", token });
+      setTransactions((prev) =>
+        prev.map((x) => (x.id === t.id ? { ...x, statut: "annulee" } : x)),
+      );
+    } catch (err) {
+      setError(messageFromError(err));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function telechargerRecu(t: Transaction) {
+    try {
+      const res = await fetch(`${API_URL}/transactions/${t.id}/recu`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `recu-transaction-${t.id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError("Impossible de télécharger le reçu.");
+    }
+  }
+
   if (loading || !user) {
     return (
       <main className="transactions-loading">
@@ -53,11 +89,11 @@ export default function TransactionsPage() {
         <Link
           href="/dashboard"
           className="transactions-brand"
-          aria-label="AfriWatt, tableau de bord"
+          aria-label="Watt-Eo, tableau de bord"
         >
           <Image
-            src="/images/afriwatt-logo.png"
-            alt="AfriWatt"
+            src="/images/Watt-Eo-logo.png"
+            alt="Watt-Eo"
             width={160}
             height={48}
             priority
@@ -66,9 +102,12 @@ export default function TransactionsPage() {
         </Link>
 
         <nav className="transactions-nav" aria-label="Navigation principale">
-          <Link href="/dashboard">Tableau de bord</Link>
-          <Link href="/offres">Offres</Link>
+            <Link href="/dashboard">Tableau de bord</Link>
+            <Link href="/offres">Offres</Link>
+               {estProducteur && <Link href="/installation">Mon installation</Link>}
+               {estProducteur && <Link href="/commandes">Commandes</Link>}
         </nav>
+        
       </header>
 
       <section className="transactions-content">
@@ -125,6 +164,7 @@ export default function TransactionsPage() {
                     <th>Quantité</th>
                     <th>Total</th>
                     <th>Statut</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -160,6 +200,27 @@ export default function TransactionsPage() {
                         >
                           {transaction.statut}
                         </span>
+                      </td>
+                      <td data-label="Action">
+                        {!estProducteur && transaction.statut === "en_attente" && (
+                          <button
+                            type="button"
+                            disabled={busyId === transaction.id}
+                            onClick={() => annuler(transaction)}
+                            className="transactions-action-btn"
+                          >
+                            Annuler
+                          </button>
+                        )}
+                        {transaction.statut === "confirmee" && (
+                          <button
+                            type="button"
+                            onClick={() => telechargerRecu(transaction)}
+                            className="transactions-action-btn"
+                          >
+                            Reçu PDF
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

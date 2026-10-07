@@ -20,12 +20,27 @@ import type { DashboardData } from "@/lib/types";
 const n = (v: number) =>
   v.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
 
+// "2026-09-30" -> "30/09"
+const formaterJour = (iso: string) => {
+  const [, mois, jour] = iso.split("-");
+  return `${jour}/${mois}`;
+};
+
+// "2026-09-30" -> "30/09/2026"
+const formaterJourComplet = (iso: string) => {
+  const [annee, mois, jour] = iso.split("-");
+  return `${jour}/${mois}/${annee}`;
+};
+
+const PERIODES = [7, 30, 90] as const;
+
 function construireStats(d: DashboardData) {
   if (d.role === "producteur") {
     return [
       { label: "Crédits", value: n(d.credits), icon: "💳" },
       { label: "Énergie vendue", value: `${n(d.kwh_vendus)} kWh`, icon: "⚡" },
-      { label: "Revenus", value: `${n(d.revenus)} crédits`, icon: "💰" },
+      { label: "Revenus nets", value: `${n(d.revenus)} crédits`, icon: "💰" },
+      { label: "Commissions Watt-Eo", value: `${n(d.commissions)} crédits`, icon: "🏷️" },
       { label: "Nombre de ventes", value: n(d.nombre_ventes), icon: "📊" },
       { label: "Offres actives", value: n(d.offres_actives), icon: "☀️" },
       { label: "Énergie en vente", value: `${n(d.kwh_en_vente)} kWh`, icon: "🔋" },
@@ -47,14 +62,14 @@ function construireStats(d: DashboardData) {
   ];
 }
 
-function GraphiqueMensuel({
+function GraphiqueJournalier({
   titre,
   donnees,
   cle,
   nom,
 }: {
   titre: string;
-  donnees: { mois: string; kwh: number; total: number }[];
+  donnees: { jour: string; kwh: number; total: number }[];
   cle: "kwh" | "total";
   nom: string;
 }) {
@@ -82,7 +97,9 @@ function GraphiqueMensuel({
               vertical={false}
             />
             <XAxis
-              dataKey="mois"
+              dataKey="jour"
+              tickFormatter={formaterJour}
+              minTickGap={16}
               axisLine={false}
               tickLine={false}
               tick={{ fill: "#718078", fontSize: 12 }}
@@ -94,6 +111,7 @@ function GraphiqueMensuel({
             />
             <Tooltip
               cursor={{ fill: "#f0f7f1" }}
+              labelFormatter={(label) => formaterJourComplet(String(label))}
               contentStyle={{
                 border: "1px solid #e2ebe4",
                 borderRadius: 12,
@@ -105,7 +123,7 @@ function GraphiqueMensuel({
               name={nom}
               fill="#21834d"
               radius={[6, 6, 0, 0]}
-              maxBarSize={42}
+              maxBarSize={24}
             />
           </BarChart>
         </ResponsiveContainer>
@@ -119,23 +137,28 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const [data, setData] = useState<DashboardData | null>(null);
+  const [jours, setJours] = useState<number>(30);
   const [montant, setMontant] = useState("1000");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [rechargementEnCours, setRechargementEnCours] = useState(false);
 
   const charger = useCallback(async () => {
-    if (!token) return;
+  if (!token || user?.role === "admin") return;
 
-    try {
-      setData(await api<DashboardData>("/dashboard", { token }));
-    } catch (err) {
-      setError(messageFromError(err));
-    }
-  }, [token]);
+  try {
+    setData(
+      await api<DashboardData>(`/dashboard?jours=${jours}`, { token }),
+    );
+  } catch (err) {
+    setError(messageFromError(err));
+  }
+  }, [token, jours, user?.role]);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+  if (loading) return;
+  if (!user) router.replace("/login");
+  else if (user.role === "admin") router.replace("/admin");
   }, [loading, user, router]);
 
   useEffect(() => {
@@ -164,7 +187,7 @@ export default function DashboardPage() {
     }
   }
 
-  if (loading || !user) {
+  if (loading || !user || user.role === "admin") {
     return (
       <main className="dashboard-loading">
         <span className="dashboard-loader" />
@@ -174,11 +197,15 @@ export default function DashboardPage() {
   }
 
   const estProducteur = user.role === "producteur";
-  const evolution = (data?.evolution_mensuelle ?? []).map((ligne) => ({
-    mois: ligne.mois,
+
+  const evolution = (data?.evolution_journaliere ?? []).map((ligne) => ({
+    jour: ligne.jour,
     kwh: Number(ligne.kwh),
     total: Number(ligne.total),
   }));
+
+  // L'API renvoie tous les jours (à 0 s'il n'y a rien) : on teste l'activité réelle.
+  const aDeLActivite = evolution.some((l) => l.kwh > 0 || l.total > 0);
 
   return (
     <main className="dashboard-page">
@@ -186,11 +213,11 @@ export default function DashboardPage() {
         <Link
           href="/"
           className="dashboard-brand"
-          aria-label="AfriWatt, accueil"
+          aria-label="Watt-Eo, accueil"
         >
           <Image
-            src="/images/afriwatt-logo.png"
-            alt="AfriWatt"
+            src="/images/Watt-Eo-logo.png"
+            alt="Watt-Eo"
             width={160}
             height={48}
             priority
@@ -204,6 +231,8 @@ export default function DashboardPage() {
         >
           <Link href="/offres">Offres</Link>
           {estProducteur && <Link href="/mes-offres">Mes offres</Link>}
+          {estProducteur && <Link href="/installation">Mon installation</Link>}
+          {estProducteur && <Link href="/commandes">Commandes</Link>}
           <Link href="/transactions">
             {estProducteur ? "Mes ventes" : "Mes achats"}
           </Link>
@@ -272,9 +301,7 @@ export default function DashboardPage() {
               </label>
               <button type="submit" disabled={rechargementEnCours}>
                 {rechargementEnCours ? "Rechargement…" : "Recharger"}
-                {!rechargementEnCours && (
-                  <span aria-hidden="true"> →</span>
-                )}
+                {!rechargementEnCours && <span aria-hidden="true"> →</span>}
               </button>
             </form>
           </section>
@@ -328,11 +355,29 @@ export default function DashboardPage() {
                   <span className="dashboard-section-kicker">
                     VOTRE ACTIVITÉ
                   </span>
-                  <h2>Évolution mensuelle</h2>
+                  <h2>Évolution journalière</h2>
+                </div>
+
+                <div
+                  role="group"
+                  aria-label="Période affichée"
+                  className="dashboard-period"
+                >
+                  {PERIODES.map((j) => (
+                    <button
+                      key={j}
+                      type="button"
+                      onClick={() => setJours(j)}
+                      aria-pressed={jours === j}
+                      className={jours === j ? "is-active" : ""}
+                    >
+                      {j} jours
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {evolution.length === 0 ? (
+              {!aDeLActivite ? (
                 <div className="dashboard-empty">
                   <span aria-hidden="true">📈</span>
                   <h3>Vos graphiques apparaîtront ici</h3>
@@ -340,21 +385,21 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="dashboard-charts">
-                  <GraphiqueMensuel
+                  <GraphiqueJournalier
                     titre={
                       estProducteur
-                        ? "Énergie vendue par mois (kWh)"
-                        : "Énergie achetée par mois (kWh)"
+                        ? `Énergie vendue par jour (kWh) – ${jours} jours`
+                        : `Énergie achetée par jour (kWh) – ${jours} jours`
                     }
                     donnees={evolution}
                     cle="kwh"
                     nom="kWh"
                   />
-                  <GraphiqueMensuel
+                  <GraphiqueJournalier
                     titre={
                       estProducteur
-                        ? "Revenus par mois (crédits)"
-                        : "Dépenses par mois (crédits)"
+                        ? `Revenus nets par jour (crédits) – ${jours} jours`
+                        : `Dépenses par jour (crédits) – ${jours} jours`
                     }
                     donnees={evolution}
                     cle="total"

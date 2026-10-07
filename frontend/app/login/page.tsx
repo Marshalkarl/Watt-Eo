@@ -22,8 +22,8 @@ export default function LoginPage() {
     setBusy(true);
 
     try {
-      await login(email, password);
-      router.push("/dashboard");
+      const connecte = await login(email, password);
+      router.push(connecte.role === "admin" ? "/admin" : "/dashboard");
     } catch (err) {
       setError(messageFromError(err));
     } finally {

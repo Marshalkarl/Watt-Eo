@@ -1,0 +1,931 @@
+/* ==========================================================
+   Mon installation – Watt-Eo (version animée)
+   Palette alignée sur le tableau de bord (vert #21834d)
+   ========================================================== */
+
+/* ---------- Animations ---------- */
+
+@keyframes apparition {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes apparitionGauche {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes jaillissement {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fondVivant {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes flotter {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-24px, 18px) scale(1.12);
+  }
+}
+
+@keyframes balayage {
+  0% {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  60%,
+  100% {
+    transform: translateX(320%) skewX(-20deg);
+  }
+}
+
+@keyframes halo {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 14px rgba(255, 255, 255, 0);
+  }
+}
+
+@keyframes pouls {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.7);
+    opacity: 0.35;
+  }
+}
+
+@keyframes revelation {
+  from {
+    clip-path: inset(-40px 100% -40px -40px);
+  }
+  to {
+    clip-path: inset(-40px);
+  }
+}
+
+@keyframes secousse {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes rayures {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 28px 0;
+  }
+}
+
+/* ---------- Base et variables ---------- */
+
+.page {
+  --vert-900: #12321f;
+  --vert-800: #18412a;
+  --vert-700: #1b6b3f;
+  --vert-600: #21834d;
+  --vert-500: #2f9e5f;
+  --vert-200: #cfe8d8;
+  --vert-100: #e3f1e7;
+  --vert-50: #f0f7f1;
+
+  --encre: #14261c;
+  --encre-douce: #718078;
+  --bord: #e2ebe4;
+  --fond: #f6faf7;
+  --surface: #ffffff;
+
+  --bleu-700: #1d4ed8;
+  --bleu-100: #e0eaff;
+
+  --rouge-700: #b42318;
+  --rouge-100: #fdecea;
+
+  --rayon-l: 20px;
+  --rayon-m: 14px;
+  --rayon-s: 10px;
+  --ombre: 0 8px 24px rgba(24, 65, 42, 0.08);
+  --ombre-haute: 0 16px 36px rgba(24, 65, 42, 0.16);
+  --courbe: cubic-bezier(0.22, 0.8, 0.24, 1);
+
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  min-height: 100vh;
+  color: var(--encre);
+  background:
+    radial-gradient(
+      900px 420px at 90% -80px,
+      rgba(47, 158, 95, 0.1),
+      transparent 70%
+    ),
+    var(--fond);
+}
+
+/* Entrée en cascade des blocs principaux */
+.page > * {
+  animation: apparition 0.7s var(--courbe) both;
+}
+.page > :nth-child(1) {
+  animation-delay: 0.05s;
+}
+.page > :nth-child(2) {
+  animation-delay: 0.15s;
+}
+.page > :nth-child(3) {
+  animation-delay: 0.25s;
+}
+.page > :nth-child(4) {
+  animation-delay: 0.35s;
+}
+.page > :nth-child(5) {
+  animation-delay: 0.45s;
+}
+.page > :nth-child(6) {
+  animation-delay: 0.55s;
+}
+
+/* ---------- En-tête ---------- */
+
+.header h1 {
+  margin: 0 0 6px;
+  font-size: clamp(1.6rem, 2.4vw + 1rem, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg, var(--vert-800), var(--vert-500));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.header p {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--encre-douce);
+  line-height: 1.5;
+}
+
+/* ---------- Navigation de l'en-tête ---------- */
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.navLien {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border: 1px solid var(--bord);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--vert-700);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(24, 65, 42, 0.06);
+  transition:
+    background 0.3s var(--courbe),
+    border-color 0.3s ease,
+    transform 0.2s var(--courbe);
+}
+
+.navLien:hover {
+  background: var(--vert-100);
+  border-color: var(--vert-200);
+  transform: translateY(-2px);
+}
+
+.navLien:active {
+  transform: scale(0.96);
+}
+
+.navLien:focus-visible {
+  outline: 2px solid var(--vert-600);
+  outline-offset: 2px;
+}
+
+/* ---------- Message d'erreur ---------- */
+
+.error {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid #f5c2bd;
+  border-left: 4px solid var(--rouge-700);
+  border-radius: var(--rayon-s);
+  background: var(--rouge-100);
+  color: var(--rouge-700);
+  font-size: 0.95rem;
+  animation:
+    apparition 0.4s var(--courbe) both,
+    secousse 0.5s 0.3s ease-in-out both;
+}
+
+/* ---------- Cartes de synthèse ---------- */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* Tablette : deux cartes par ligne (doit rester avant la règle mobile plus bas) */
+@media (max-width: 960px) {
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Les cartes apparaissent l'une après l'autre */
+.cards > * {
+  animation: apparition 0.7s var(--courbe) both;
+}
+.cards > :nth-child(1) {
+  animation-delay: 0.2s;
+}
+.cards > :nth-child(2) {
+  animation-delay: 0.35s;
+}
+.cards > :nth-child(3) {
+  animation-delay: 0.45s;
+}
+.cards > :nth-child(4) {
+  animation-delay: 0.55s;
+}
+.cards > :nth-child(5) {
+  animation-delay: 0.65s;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  overflow: hidden;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-m);
+  background: var(--surface);
+  box-shadow: var(--ombre);
+  transition:
+    transform 0.3s var(--courbe),
+    box-shadow 0.3s var(--courbe),
+    border-color 0.3s ease;
+}
+
+/* Filet vert qui se déploie au survol */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--vert-600), var(--vert-500));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s var(--courbe);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: var(--vert-200);
+  box-shadow: var(--ombre-haute);
+}
+
+.card:hover::before {
+  transform: scaleX(1);
+}
+
+.card > span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--encre-douce);
+}
+
+.card > strong {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--vert-700);
+  animation: jaillissement 0.7s var(--courbe) 0.5s both;
+}
+
+/* ---------- Carte principale : le surplus vendable ---------- */
+
+.surplus {
+  grid-column: 1 / -1;
+  gap: 8px;
+  padding: 28px;
+  border: 0;
+  border-radius: var(--rayon-l);
+  background: linear-gradient(
+    120deg,
+    var(--vert-900),
+    var(--vert-700),
+    var(--vert-600),
+    var(--vert-800)
+  );
+  background-size: 300% 300%;
+  color: #fff;
+  animation:
+    apparition 0.7s var(--courbe) 0.2s both,
+    fondVivant 14s ease-in-out 1s infinite;
+}
+
+/* Halo lumineux qui flotte lentement */
+.surplus::after {
+  content: "";
+  position: absolute;
+  top: -90px;
+  right: -60px;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(160, 235, 190, 0.35),
+    transparent 68%
+  );
+  pointer-events: none;
+  animation: flotter 9s ease-in-out infinite;
+}
+
+.surplus > * {
+  position: relative;
+  z-index: 1;
+}
+
+.surplus > span {
+  color: var(--vert-200);
+}
+
+.surplus > strong {
+  font-size: clamp(2rem, 4vw + 1rem, 3rem);
+  line-height: 1.1;
+  color: #fff;
+  animation: jaillissement 0.9s var(--courbe) 0.5s both;
+}
+
+.surplus > small {
+  max-width: 52ch;
+  color: var(--vert-200);
+  line-height: 1.5;
+}
+
+.surplus br {
+  display: none;
+}
+
+.surplus:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--ombre-haute);
+}
+
+.surplus::before {
+  display: none;
+}
+
+/* ---------- Bouton « Mettre en vente » ---------- */
+
+.action {
+  position: relative;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 11px 22px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--vert-800);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  animation: halo 2.6s ease-out 1.4s infinite;
+  transition:
+    transform 0.25s var(--courbe),
+    box-shadow 0.25s var(--courbe);
+}
+
+/* Reflet qui traverse le bouton */
+.action::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(47, 158, 95, 0.28),
+    transparent
+  );
+  animation: balayage 3.4s ease-in-out 1.8s infinite;
+}
+
+/* Flèche qui glisse au survol */
+.action::after {
+  content: "→";
+  display: inline-block;
+  transition: transform 0.25s var(--courbe);
+}
+
+.action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+  animation-play-state: paused;
+}
+
+.action:hover::after {
+  transform: translateX(5px);
+}
+
+.action:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.action:focus-visible {
+  outline: 3px solid var(--vert-200);
+  outline-offset: 3px;
+}
+
+.actionOff {
+  background: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+  cursor: not-allowed;
+  box-shadow: none;
+  animation: none;
+}
+
+.actionOff::before,
+.actionOff::after {
+  display: none;
+}
+
+/* ---------- Panneaux ---------- */
+
+.panel {
+  padding: 24px;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-l);
+  background: var(--surface);
+  box-shadow: var(--ombre);
+  transition:
+    box-shadow 0.35s var(--courbe),
+    border-color 0.35s ease;
+}
+
+.panel:hover {
+  border-color: var(--vert-200);
+  box-shadow: var(--ombre-haute);
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.panelHead h2 {
+  position: relative;
+  margin: 0;
+  padding-left: 14px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--vert-800);
+}
+
+/* Barre verte qui pousse à côté du titre */
+.panelHead h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 15%;
+  bottom: 15%;
+  width: 4px;
+  border-radius: 4px;
+  background: linear-gradient(var(--vert-500), var(--vert-700));
+  transform-origin: top;
+  animation: pousse 0.6s var(--courbe) 0.5s both;
+}
+
+@keyframes pousse {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.empty {
+  margin: 0;
+  padding: 32px 16px;
+  border: 1px dashed var(--vert-200);
+  border-radius: var(--rayon-m);
+  background: var(--vert-50);
+  text-align: center;
+  color: var(--encre-douce);
+}
+
+/* ---------- Sélecteur de période ---------- */
+
+.tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--vert-50);
+}
+
+.tab {
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--encre-douce);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.3s var(--courbe),
+    color 0.3s ease,
+    transform 0.2s var(--courbe),
+    box-shadow 0.3s var(--courbe);
+}
+
+.tab:hover {
+  color: var(--vert-700);
+  background: var(--vert-100);
+}
+
+.tab:active {
+  transform: scale(0.94);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--vert-600);
+  outline-offset: 2px;
+}
+
+.tabActive,
+.tabActive:hover {
+  background: var(--vert-600);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(33, 131, 77, 0.35);
+}
+
+/* ---------- Graphique ---------- */
+
+.chart {
+  width: 100%;
+  height: 320px;
+  animation: revelation 1.2s var(--courbe) 0.5s both;
+}
+
+/* ---------- Liste des compteurs ---------- */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-m);
+  background: var(--fond);
+  animation: apparitionGauche 0.55s var(--courbe) both;
+  transition:
+    transform 0.3s var(--courbe),
+    border-color 0.3s ease,
+    background 0.3s ease,
+    box-shadow 0.3s var(--courbe);
+}
+
+.item:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.item:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.item:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.item:nth-child(4) {
+  animation-delay: 0.4s;
+}
+.item:nth-child(5) {
+  animation-delay: 0.5s;
+}
+.item:nth-child(n + 6) {
+  animation-delay: 0.6s;
+}
+
+.item:hover {
+  transform: translateX(6px);
+  border-color: var(--vert-200);
+  background: var(--vert-50);
+  box-shadow: 0 6px 16px rgba(24, 65, 42, 0.08);
+}
+
+.item strong {
+  color: var(--vert-800);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--vert-100);
+  color: var(--vert-700);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Point qui pulse : le compteur est actif */
+.badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pouls 2s ease-in-out infinite;
+}
+
+.badgeConso {
+  background: var(--bleu-100);
+  color: var(--bleu-700);
+}
+
+/* ---------- Formulaire ---------- */
+
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: end;
+  gap: 16px;
+}
+
+/* Les champs qui apparaissent (ex. Source, Puissance) glissent en douceur */
+.form > * {
+  animation: apparition 0.45s var(--courbe) both;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field > span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--vert-800);
+  transition:
+    color 0.25s ease,
+    transform 0.25s var(--courbe);
+}
+
+.field:focus-within > span {
+  color: var(--vert-600);
+  transform: translateX(3px);
+}
+
+.field input,
+.field select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-s);
+  background: var(--surface);
+  color: var(--encre);
+  font: inherit;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s var(--courbe);
+}
+
+.field input::placeholder {
+  color: #a3b0a8;
+}
+
+.field input:hover,
+.field select:hover {
+  border-color: var(--vert-200);
+}
+
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--vert-600);
+  box-shadow: 0 0 0 4px rgba(33, 131, 77, 0.16);
+  transform: translateY(-1px);
+}
+
+.submit {
+  position: relative;
+  padding: 12px 22px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--rayon-s);
+  background: linear-gradient(135deg, var(--vert-600), var(--vert-700));
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.25s var(--courbe),
+    box-shadow 0.25s var(--courbe);
+}
+
+/* Reflet au survol */
+.submit::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  transform: translateX(-120%) skewX(-20deg);
+}
+
+.submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(33, 131, 77, 0.35);
+}
+
+.submit:hover:not(:disabled)::before {
+  animation: balayage 0.9s ease-in-out;
+}
+
+.submit:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.submit:focus-visible {
+  outline: 3px solid var(--vert-200);
+  outline-offset: 2px;
+}
+
+/* Enregistrement en cours : rayures qui défilent */
+.submit:disabled {
+  background: repeating-linear-gradient(
+    115deg,
+    var(--vert-200) 0 14px,
+    var(--vert-100) 14px 28px
+  );
+  color: var(--vert-700);
+  cursor: progress;
+  animation: rayures 0.8s linear infinite;
+}
+
+.panel .error {
+  margin-top: 16px;
+}
+
+/* ---------- Tablette et mobile ---------- */
+
+@media (max-width: 720px) {
+  .page {
+    padding: 20px 14px 48px;
+    gap: 18px;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .surplus {
+    padding: 22px;
+  }
+
+  .surplus::after {
+    width: 200px;
+    height: 200px;
+  }
+
+  .panel {
+    padding: 18px;
+  }
+
+  .chart {
+    height: 260px;
+  }
+
+  .submit {
+    width: 100%;
+  }
+
+  /* Pas d'effet de survol décalé sur écran tactile */
+  .item:hover {
+    transform: none;
+  }
+}
+
+/* ---------- Mouvement réduit : on coupe tout ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .page *,
+  .page *::before,
+  .page *::after,
+  .page {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .card:hover,
+  .item:hover,
+  .surplus:hover,
+  .action:hover,
+  .navLien:hover,
+  .submit:hover:not(:disabled) {
+    transform: none;
+  }
+}

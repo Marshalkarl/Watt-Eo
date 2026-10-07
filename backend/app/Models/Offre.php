@@ -12,6 +12,7 @@ class Offre extends Model
         'producteur_id',
         'quantite_kwh',
         'prix_kwh',
+        'source',
         'latitude',
         'longitude',
         'disponible',

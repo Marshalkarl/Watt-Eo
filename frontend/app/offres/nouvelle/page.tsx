@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { api, messageFromError } from "@/lib/api";
+import type { RepereMarche } from "@/lib/types";
+import { SOURCES } from "@/lib/sources";
 
 export default function NouvelleOffrePage() {
   const { user, token, loading } = useAuth();
@@ -13,12 +15,14 @@ export default function NouvelleOffrePage() {
   const [form, setForm] = useState({
     quantite_kwh: "",
     prix_kwh: "",
+    source: "solaire",
     latitude: "",
     longitude: "",
   });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [positionBusy, setPositionBusy] = useState(false);
+  const [repere, setRepere] = useState<RepereMarche | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -42,7 +46,27 @@ export default function NouvelleOffrePage() {
         longitude: user.longitude != null ? String(user.longitude) : "",
       };
     });
-  }, [loading, user, router]);
+       }, [loading, user, router]);
+    // Quantité préremplie depuis la page « Mon installation » (?quantite=227.2)
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("quantite");
+    if (q && Number.isFinite(Number(q)) && Number(q) > 0) {
+      setForm((current) =>
+        current.quantite_kwh ? current : { ...current, quantite_kwh: q },
+        );
+       }
+     }  , []);
+
+  useEffect(() => {
+  api("/marche/prix", { token })
+    .then((data) => {
+      console.log("repères marché :", data);
+      const r = data as RepereMarche;
+      setRepere(r);
+      setForm((c) => (c.prix_kwh ? c : { ...c, prix_kwh: String(r.prix_suggere) }));
+    })
+    .catch((err) => console.error("échec /marche/prix :", err));
+      }, [token]);
 
   function setField(field: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -100,6 +124,7 @@ export default function NouvelleOffrePage() {
         body: {
           quantite_kwh: quantite,
           prix_kwh: prix,
+          source: form.source,
           latitude,
           longitude,
         },
@@ -127,7 +152,7 @@ export default function NouvelleOffrePage() {
       <header className="nouvelle-offre-topbar">
         <Link href="/dashboard" className="nouvelle-offre-brand">
           <span className="nouvelle-offre-brand-mark">A</span>
-          <span>AfriWatt</span>
+          <span>Watt-Eo</span>
         </Link>
 
         <Link href="/mes-offres" className="nouvelle-offre-back">
@@ -190,21 +215,44 @@ export default function NouvelleOffrePage() {
               <label className="nouvelle-offre-field">
                 <span>Prix de vente</span>
                 <div className="nouvelle-offre-input-wrap">
-                  <input
-                    type="number"
-                    min="0.1"
-                    step="0.1"
-                    placeholder="Ex. 12"
-                    value={form.prix_kwh}
-                    onChange={(event) =>
-                      setField("prix_kwh", event.target.value)
-                    }
-                    required
-                  />
+                 <input
+                     type="number"
+                     min={repere?.prix_plancher_kwh ?? 0.1}
+                     max={repere?.prix_plafond_kwh}
+                      step="0.1"
+                       placeholder={repere ? `Ex. ${repere.prix_suggere}` : "Ex. 100"}
+                     value={form.prix_kwh}
+                     onChange={(event) => setField("prix_kwh", event.target.value)}
+                     required
+                    />
                   <span className="nouvelle-offre-unit">crédits/kWh</span>
                 </div>
-                <small>Prix demandé pour chaque kilowattheure.</small>
+                <small>
+                   {repere
+                       ? `Entre ${repere.prix_plancher_kwh} et ${repere.prix_plafond_kwh} crédits/kWh. Prix suggéré : ${repere.prix_suggere}.` +
+                         (repere.prix_moyen !== null && repere.economie_pct !== null
+                        ? ` Moyenne du marché : ${repere.prix_moyen} (${repere.economie_pct} % sous le réseau).`
+                          : "")
+                       : "Prix demandé pour chaque kilowattheure."}
+                  </small>
               </label>
+
+              <label className="nouvelle-offre-field">
+                    <span>Source d’énergie</span>
+                    <div className="nouvelle-offre-input-wrap">
+                <select
+                       value={form.source}
+                        onChange={(event) => setField("source", event.target.value)}
+                 >
+                          {SOURCES.map((s) => (
+                           <option key={s.value} value={s.value}>
+                            {s.icon} {s.label}
+                          </option>
+                         ))}
+                      </select>
+                        </div>
+                     <small>D’où vient l’énergie que vous vendez.</small>
+               </label>
             </div>
 
             <div className="nouvelle-offre-location-heading">
@@ -282,3 +330,4 @@ export default function NouvelleOffrePage() {
     </main>
   );
 }
+

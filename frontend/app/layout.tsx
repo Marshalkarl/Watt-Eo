@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AfriWatt",
+  title: "Watt-Eo",
   description: "Partage d'énergie renouvelable entre particuliers",
 };
 

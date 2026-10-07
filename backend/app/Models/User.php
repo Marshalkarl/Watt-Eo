@@ -35,6 +35,7 @@ class User extends Authenticatable
             'latitude'          => 'float',
             'longitude'         => 'float',
             'credits'           => 'float',
+            'actif'             => 'boolean',
         ];
     }
 
@@ -46,5 +47,20 @@ class User extends Authenticatable
     public function achats(): HasMany
     {
         return $this->hasMany(Transaction::class, 'consommateur_id');
+    }
+
+    public function mouvementsCredits(): HasMany
+    {
+        return $this->hasMany(MouvementCredit::class);
+    }
+
+    public function compteurs()
+    {
+        return $this->hasMany(Compteur::class);
+    }
+
+    public function estAdmin(): bool
+    {
+        return $this->role === 'admin';
     }
 }

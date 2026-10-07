@@ -42,12 +42,12 @@ export default function HomePage() {
         <Link
           href="/"
           className="home-brand"
-          aria-label="AfriWatt, accueil"
+          aria-label="Watt-Eo, accueil"
           onClick={closeMenu}
         >
           <img
-            src="/images/afriwatt-logo.png"
-            alt="AfriWatt"
+            src="/images/Watt-Eo-logo.png"
+            alt="Watt-Eo"
             className="home-brand-logo"
           />
         </Link>
@@ -76,6 +76,20 @@ export default function HomePage() {
             <Link href="/offres" onClick={closeMenu}>
               Les offres
             </Link>
+            <Link
+                    href="/login"
+                    className="home-login-link"
+                    onClick={closeMenu}
+                  >
+                    Connexion
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="home-button home-button"
+                    onClick={closeMenu}
+                  >
+                    Créer un compte
+                 </Link>
           </nav>
 
           <div className="home-header-actions">
@@ -90,20 +104,7 @@ export default function HomePage() {
                 </Link>
               ) : (
                 <>
-                  <Link
-                    href="/login"
-                    className="home-login-link"
-                    onClick={closeMenu}
-                  >
-                    Connexion
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="home-button home-button-dark"
-                    onClick={closeMenu}
-                  >
-                    Créer un compte
-                  </Link>
+                  
                 </>
               ))}
           </div>

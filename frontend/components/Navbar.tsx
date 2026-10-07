@@ -19,6 +19,8 @@ export default function Navbar() {
   if (user?.role === "producteur") {
     liens.push(
       { href: "/mes-offres", label: "Mes offres" },
+      { href: "/installation", label: "Mon installation" },
+      { href: "/commandes", label: "Commandes" },
       { href: "/transactions", label: "Mes ventes" },
     );
   }
@@ -27,7 +29,9 @@ export default function Navbar() {
     liens.push({ href: "/transactions", label: "Mes achats" });
   }
 
-  if (user) {
+  if (user?.role === "admin") {
+    liens.push({ href: "/admin", label: "Administration" });
+  } else if (user) {
     liens.push({ href: "/dashboard", label: "Tableau de bord" });
   }
 
@@ -87,7 +91,7 @@ export default function Navbar() {
               <>
                 <span className="navbar-user">
                   <strong>{user.name}</strong>
-                  <span>{user.credits} crédits</span>
+                  {user.role !== "admin" && <span>{user.credits} crédits</span>}
                 </span>
 
                 <button

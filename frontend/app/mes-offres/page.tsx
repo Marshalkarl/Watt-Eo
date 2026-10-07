@@ -110,11 +110,11 @@ export default function MesOffresPage() {
         <Link
           href="/dashboard"
           className="mes-offres-brand"
-          aria-label="AfriWatt, tableau de bord"
+          aria-label="Watt-Eo, tableau de bord"
         >
           <Image
-            src="/images/afriwatt-logo.png"
-            alt="AfriWatt"
+            src="/images/Watt-Eo-logo.png"
+            alt="Watt-Eo"
             width={160}
             height={48}
             priority
@@ -124,6 +124,7 @@ export default function MesOffresPage() {
 
         <nav className="mes-offres-nav" aria-label="Navigation principale">
           <Link href="/dashboard">Tableau de bord</Link>
+          <Link href="/installation">Mon installation</Link>
           <Link href="/transactions">Mes ventes</Link>
           <Link href="/offres">Explorer les offres</Link>
         </nav>

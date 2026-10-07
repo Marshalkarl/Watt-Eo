@@ -14,7 +14,7 @@ export type User = {
   id: number;
   name: string;
   email: string;
-  role: "producteur" | "consommateur";
+  role: "producteur" | "consommateur" | "admin";
   latitude: number | null;
   longitude: number | null;
   credits: number;
@@ -34,7 +34,7 @@ type AuthContextType = {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -70,12 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u);
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     const res = await api<{ user: User; token: string }>("/login", {
       method: "POST",
       body: { email, password },
     });
     startSession(res.user, res.token);
+    return res.user;
   };
 
   const register = async (payload: RegisterPayload) => {

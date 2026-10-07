@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { api, messageFromError } from "@/lib/api";
 import type { Offre } from "@/lib/types";
-import Image from "next/image";
+import { SOURCES, labelSource, iconSource } from "@/lib/sources";
 
 const OffresMap = dynamic(() => import("@/components/OffresMap"), {
   ssr: false,
@@ -18,6 +18,18 @@ const OffresMap = dynamic(() => import("@/components/OffresMap"), {
   ),
 });
 
+// Évite un appel au serveur à chaque touche tapée dans les filtres.
+function useDebounced<T>(value: T, delay = 400) {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debounced;
+}
+
 function OffreCard({
   offre,
   role,
@@ -26,7 +38,7 @@ function OffreCard({
   onAcheter,
 }: {
   offre: Offre;
-  role: "producteur" | "consommateur" | null;
+  role: "producteur" | "consommateur" | "admin" | null;
   selected: boolean;
   onSelect: (id: number) => void;
   onAcheter: (offre: Offre, quantite: number) => Promise<void>;
@@ -36,9 +48,7 @@ function OffreCard({
 
   const q = Number(quantite);
   const valide = Number.isFinite(q) && q > 0 && q <= offre.quantite_kwh;
-  const total = valide
-    ? Math.round(q * offre.prix_kwh * 100) / 100
-    : 0;
+  const total = valide ? Math.round(q * offre.prix_kwh * 100) / 100 : 0;
 
   async function handleAcheter() {
     if (!valide || busy) return;
@@ -86,10 +96,20 @@ function OffreCard({
           </div>
         </div>
 
+        <div className="offre-detail">
+          <span className="offre-detail-icon" aria-hidden="true">
+            {iconSource(offre.source)}
+          </span>
+          <div>
+            <small>Source</small>
+            <strong>{labelSource(offre.source)}</strong>
+          </div>
+        </div>
+
         {offre.distance_km !== undefined && (
           <div className="offre-distance">
             <span aria-hidden="true">⌖</span>
-            {offre.distance_km.toFixed(1)} km de vous
+            {Number(offre.distance_km).toFixed(1)} km de vous
           </div>
         )}
       </div>
@@ -119,9 +139,7 @@ function OffreCard({
               />
               <span>kWh</span>
             </div>
-            <span className="offre-buy-total">
-              {total.toFixed(2)} crédits
-            </span>
+            <span className="offre-buy-total">{total.toFixed(2)} crédits</span>
           </div>
 
           <button
@@ -134,7 +152,7 @@ function OffreCard({
             {!busy && <span aria-hidden="true">→</span>}
           </button>
         </div>
-      ) : role === "producteur" ? (
+      ) : role === "producteur" || role === "admin" ? (
         <p className="offre-role-hint">
           Les achats sont réservés aux consommateurs.
         </p>
@@ -161,6 +179,29 @@ export default function OffresPage() {
   const [rayon, setRayon] = useState("10");
   const [geoLoading, setGeoLoading] = useState(false);
 
+  // Filtres et tri (blocs 2 et 3)
+  const [prixMax, setPrixMax] = useState("");
+  const [quantiteMin, setQuantiteMin] = useState("");
+  const [tri, setTri] = useState("");
+  const [source, setSource] = useState("");
+  const prixMaxD = useDebounced(prixMax);
+  const quantiteMinD = useDebounced(quantiteMin);
+  const filtresActifs = Boolean(prixMax || quantiteMin || tri || source);
+
+  const estAdmin = user?.role === "admin";
+
+  function reinitialiserFiltres() {
+    setPrixMax("");
+    setQuantiteMin("");
+    setTri("");
+    setSource("");
+  }
+
+  function toutReinitialiser() {
+    setPosition(null);
+    reinitialiserFiltres();
+  }
+
   const charger = useCallback(async () => {
     const params = new URLSearchParams();
 
@@ -169,6 +210,10 @@ export default function OffresPage() {
       params.set("longitude", String(position.lng));
       if (rayon) params.set("rayon", rayon);
     }
+    if (prixMaxD) params.set("prix_max", prixMaxD);
+    if (quantiteMinD) params.set("quantite_min", quantiteMinD);
+    if (tri) params.set("tri", tri);
+    if (source) params.set("source", source);
 
     const query = params.toString();
 
@@ -181,12 +226,16 @@ export default function OffresPage() {
     } finally {
       setLoading(false);
     }
-  }, [position, rayon]);
+  }, [position, rayon, prixMaxD, quantiteMinD, tri, source]);
 
   useEffect(() => {
-    setLoading(true);
     void charger();
   }, [charger]);
+
+  // Sans position, le tri « distance » n'a plus de sens.
+  useEffect(() => {
+    if (!position && tri === "distance") setTri("");
+  }, [position, tri]);
 
   function autourDeMoi() {
     setError("");
@@ -241,23 +290,31 @@ export default function OffresPage() {
   return (
     <main className="offres-page">
       <header className="offres-topbar">
-        
- <Link
-          href="/dashboard"
+        <Link
+          href={estAdmin ? "/admin" : "/dashboard"}
           className="home-brand"
-          aria-label="AfriWatt, accueil"
-          
+          aria-label="Watt-Eo, accueil"
         >
           <img
-            src="/images/afriwatt-logo.png"
-            alt="AfriWatt"
+            src="/images/Watt-Eo-logo.png"
+            alt="Watt-Eo"
             className="home-brand-logo"
           />
         </Link>
+
         <nav className="offres-nav" aria-label="Navigation principale">
-          <Link href="/dashboard">Tableau de bord</Link>
-          <Link href="/transactions">Mes transactions</Link>
-          {user && (
+          {estAdmin ? (
+            <Link href="/admin">Administration</Link>
+          ) : (
+            <>
+              <Link href="/dashboard">Tableau de bord</Link>
+              <Link href="/transactions">Mes transactions</Link>
+            </>
+          )}
+          {user?.role === "producteur" && (
+            <Link href="/installation">Mon installation</Link>
+          )}
+          {user && !estAdmin && (
             <span className="offres-credits">
               <span aria-hidden="true">◈</span>
               {user.credits} crédits
@@ -329,6 +386,86 @@ export default function OffresPage() {
           </div>
         </section>
 
+        <section
+          className="offres-toolbar offres-toolbar-extra"
+          aria-label="Prix, quantité, source et tri"
+        >
+          <div className="offres-field">
+            <label htmlFor="filtre-prix">Prix maximum</label>
+            <div className="offres-field-input">
+              <input
+                id="filtre-prix"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="Ex. 100"
+                value={prixMax}
+                onChange={(event) => setPrixMax(event.target.value)}
+              />
+              <span>crédits/kWh</span>
+            </div>
+          </div>
+
+          <div className="offres-field">
+            <label htmlFor="filtre-quantite">Quantité minimale</label>
+            <div className="offres-field-input">
+              <input
+                id="filtre-quantite"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="Ex. 20"
+                value={quantiteMin}
+                onChange={(event) => setQuantiteMin(event.target.value)}
+              />
+              <span>kWh</span>
+            </div>
+          </div>
+
+          <div className="offres-field">
+            <label htmlFor="filtre-source">Source d’énergie</label>
+            <select
+              id="filtre-source"
+              value={source}
+              onChange={(event) => setSource(event.target.value)}
+            >
+              <option value="">Toutes les sources</option>
+              {SOURCES.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.icon} {s.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="offres-field">
+            <label htmlFor="tri-offres">Trier par</label>
+            <select
+              id="tri-offres"
+              value={tri}
+              onChange={(event) => setTri(event.target.value)}
+            >
+              <option value="">Par défaut</option>
+              <option value="prix_asc">Prix croissant</option>
+              <option value="prix_desc">Prix décroissant</option>
+              <option value="quantite_desc">Quantité disponible</option>
+              <option value="distance" disabled={!position}>
+                Distance {position ? "" : "(activez « Autour de moi »)"}
+              </option>
+            </select>
+          </div>
+
+          {filtresActifs && (
+            <button
+              type="button"
+              className="offres-reset-button"
+              onClick={reinitialiserFiltres}
+            >
+              Réinitialiser
+            </button>
+          )}
+        </section>
+
         {message && (
           <div className="offres-notice offres-notice-success" role="status">
             <span aria-hidden="true">✓</span>
@@ -383,15 +520,15 @@ export default function OffresPage() {
               <span className="offres-empty-icon" aria-hidden="true">⚡</span>
               <h3>Aucune offre pour le moment</h3>
               <p>
-                {position
-                  ? "Aucune offre n’a été trouvée dans cette zone. Essayez d’élargir le rayon."
+                {position || filtresActifs
+                  ? "Aucune offre ne correspond à vos critères. Essayez d’élargir le rayon ou de retirer des filtres."
                   : "Revenez bientôt pour découvrir les prochaines offres d’énergie."}
               </p>
-              {position && (
+              {(position || filtresActifs) && (
                 <button
                   type="button"
                   className="offres-reset-button"
-                  onClick={() => setPosition(null)}
+                  onClick={toutReinitialiser}
                 >
                   Afficher toutes les offres
                 </button>

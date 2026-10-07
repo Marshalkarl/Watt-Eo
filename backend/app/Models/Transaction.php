@@ -12,13 +12,21 @@ class Transaction extends Model
         'consommateur_id',
         'quantite_kwh',
         'prix_total',
+        'commission',
+        'montant_net',
         'statut',
+        'motif_refus',
     ];
 
-    protected $casts = [
-        'quantite_kwh' => 'float',
-        'prix_total'   => 'float',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'quantite_kwh' => 'float',
+            'prix_total'   => 'float',
+            'commission'   => 'float',
+            'montant_net'  => 'float',
+        ];
+    }
 
     public function offre(): BelongsTo
     {
