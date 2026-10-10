@@ -15,11 +15,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias([
-            'admin' => \App\Http\Middleware\EnsureAdmin::class,
-            'actif' => \App\Http\Middleware\EnsureAccountActive::class,
-        ]);
+    $middleware->trustProxies(at: '*');
 
+    $middleware->alias([
+        'admin' => \App\Http\Middleware\EnsureAdmin::class,
+        'actif' => \App\Http\Middleware\EnsureAccountActive::class,
+    ]);
+    
         // En-têtes de sécurité sur toutes les réponses de l'API
         $middleware->api(append: [\App\Http\Middleware\SecurityHeaders::class]);
 
