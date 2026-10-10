@@ -160,3 +160,18 @@ export type AuditEntry = {
   created_at: string;
   user?: { id: number; name: string; email: string; role: string } | null;
 };
+
+export interface NotificationItem {
+  id: string;
+  type: string | null;
+  titre: string;
+  message: string;
+  transaction_id: number | null;
+  lue: boolean;
+  date: string;
+}
+
+export interface NotificationsReponse {
+  non_lues: number;
+  notifications: NotificationItem[];
+}

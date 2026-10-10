@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\MouvementCredit;
 use App\Models\Offre;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Notifications\EvenementNotification;
 use Barryvdh\DomPDF\Facade\Pdf;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
-use App\Models\AuditLog;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 
 class TransactionController extends Controller
 {
@@ -29,7 +32,7 @@ class TransactionController extends Controller
             );
         }
 
-                $data = $request->validate([
+        $data = $request->validate([
             'quantite_kwh' => ['required', 'numeric', 'gt:0', 'max:100000', 'decimal:0,3'],
         ]);
 
@@ -98,12 +101,22 @@ class TransactionController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json($transaction->load('offre.producteur:id,name'), 201);
+        $transaction->load('offre.producteur:id,name');
 
-                AuditLog::enregistrer($request->user(), 'achat', $transaction, [
+        AuditLog::enregistrer($request->user(), 'achat', $transaction, [
             'quantite_kwh' => $quantite,
             'prix_total'   => $transaction->prix_total,
         ]);
+
+        $this->notifier(
+            $transaction->offre->producteur,
+            'commande_recue',
+            'Nouvelle commande',
+            "{$request->user()->name} souhaite acheter {$quantite} kWh sur votre offre #{$transaction->offre_id}.",
+            $transaction->id,
+        );
+
+        return response()->json($transaction, 201);
     }
 
     /**
@@ -211,7 +224,37 @@ class TransactionController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-                $actions = [
+        // Notifications (après la transaction : un échec ici n'annule rien)
+        $transaction->loadMissing(['offre.producteur', 'consommateur']);
+
+        if ($action === 'annuler') {
+            $this->notifier(
+                $transaction->offre?->producteur,
+                'commande_annulee',
+                'Commande annulée',
+                "L'acheteur a annulé la commande #{$transaction->id}.",
+                $transaction->id,
+            );
+        } elseif ($action === 'confirmer') {
+            $this->notifier(
+                $transaction->consommateur,
+                'commande_confirmee',
+                'Commande confirmée',
+                "Votre commande #{$transaction->id} a été confirmée. Le reçu PDF est disponible.",
+                $transaction->id,
+            );
+        } else {
+            $this->notifier(
+                $transaction->consommateur,
+                'commande_refusee',
+                'Commande refusée',
+                "Votre commande #{$transaction->id} a été refusée"
+                    . ($motif ? " : {$motif}" : '.') . ' Vos crédits ont été remboursés.',
+                $transaction->id,
+            );
+        }
+
+        $actions = [
             'confirmer' => 'commande_confirmee',
             'refuser'   => 'commande_refusee',
             'annuler'   => 'commande_annulee',
@@ -224,6 +267,22 @@ class TransactionController extends Controller
         ]));
 
         return response()->json($transaction->fresh(['offre', 'consommateur:id,name']));
+    }
+
+    /**
+     * Une notification qui échoue ne doit jamais faire échouer l'opération déjà enregistrée.
+     */
+    private function notifier(?User $destinataire, string $type, string $titre, string $message, int $transactionId): void
+    {
+        if (!$destinataire) {
+            return;
+        }
+
+        try {
+            $destinataire->notify(new EvenementNotification($type, $titre, $message, $transactionId));
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**
@@ -271,10 +330,124 @@ class TransactionController extends Controller
         );
     }
 
+        /**
+     * Export CSV de l'historique (acheteur : ses achats, producteur : ses ventes).
+     */
+    public function exporter(Request $request)
+    {
+        $user = $request->user();
+
+        if (!in_array($user->role, ['producteur', 'consommateur'], true)) {
+            return response()->json(['message' => 'Export non disponible pour ce compte.'], 403);
+        }
+
+        $estProducteur = $user->role === 'producteur';
+
+        $transactions = $estProducteur
+            ? Transaction::whereHas('offre', fn ($q) => $q->where('producteur_id', $user->id))
+                ->with('consommateur:id,name')
+            : $user->achats()->with('offre.producteur:id,name');
+
+        $transactions = $transactions->latest()->get();
+
+        $statuts = [
+            'en_attente' => 'En attente',
+            'confirmee'  => 'Confirmée',
+            'annulee'    => 'Annulée',
+        ];
+
+        // Empêche l'exécution de formules si un nom commence par = + - @ dans Excel
+        $texte = fn ($v) => preg_match('/^[=+\-@\t\r]/', (string) $v) ? "'" . $v : (string) $v;
+        $nombre = fn ($v, int $d = 2) => number_format((float) $v, $d, ',', '');
+
+        $nomFichier = 'transactions-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($transactions, $estProducteur, $statuts, $texte, $nombre) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8 : accents corrects dans Excel
+
+            fputcsv($out, $estProducteur
+                ? ['Réf.', 'Date', 'Offre', 'Acheteur', 'Quantité (kWh)', 'Total (crédits)', 'Commission', 'Revenu net', 'Statut']
+                : ['Réf.', 'Date', 'Offre', 'Producteur', 'Quantité (kWh)', 'Total (crédits)', 'Statut'],
+                ';');
+
+            foreach ($transactions as $t) {
+                $statut = $statuts[$t->statut] ?? $t->statut;
+                $date   = $t->created_at->format('d/m/Y H:i');
+
+                if ($estProducteur) {
+                    $confirmee = $t->statut === 'confirmee';
+                    fputcsv($out, [
+                        $t->id, $date, '#' . $t->offre_id,
+                        $texte($t->consommateur?->name ?? ''),
+                        $nombre($t->quantite_kwh, 3), $nombre($t->prix_total),
+                        $confirmee ? $nombre($t->commission ?? 0) : '',
+                        $confirmee ? $nombre($t->montant_net ?? $t->prix_total) : '',
+                        $statut,
+                    ], ';');
+                } else {
+                    fputcsv($out, [
+                        $t->id, $date, '#' . $t->offre_id,
+                        $texte($t->offre?->producteur?->name ?? ''),
+                        $nombre($t->quantite_kwh, 3), $nombre($t->prix_total),
+                        $statut,
+                    ], ';');
+                }
+            }
+
+            fclose($out);
+        }, $nomFichier, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+        /**
+     * Rapport mensuel PDF du producteur (?mois=2026-10, mois courant par défaut).
+     */
+    public function rapportMensuel(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->role !== 'producteur') {
+            return response()->json(['message' => 'Rapport réservé aux producteurs.'], 403);
+        }
+
+        $data = $request->validate(['mois' => ['nullable', 'date_format:Y-m']]);
+        $mois = $data['mois'] ?? now()->format('Y-m');
+
+        $debut = Carbon::createFromFormat('Y-m-d H:i:s', "$mois-01 00:00:00");
+        $fin   = (clone $debut)->endOfMonth();
+
+        $base = Transaction::whereHas('offre', fn ($q) => $q->where('producteur_id', $user->id))
+            ->whereBetween('created_at', [$debut, $fin]);
+
+        $ventes = (clone $base)->where('statut', 'confirmee')
+            ->with('consommateur:id,name')->orderBy('created_at')->get();
+
+        $brut       = (float) $ventes->sum('prix_total');
+        $commission = (float) $ventes->sum('commission');
+        $net        = (float) $ventes->sum(fn ($v) => $v->montant_net ?? $v->prix_total);
+        $kwh        = (float) $ventes->sum('quantite_kwh');
+
+        $pdf = Pdf::loadView('pdf.rapport', [
+            'producteur'  => $user,
+            'moisLibelle' => $debut->copy()->locale('fr')->translatedFormat('F Y'),
+            'ventes'      => $ventes,
+            'nombre'      => $ventes->count(),
+            'kwh'         => $kwh,
+            'brut'        => $brut,
+            'commission'  => $commission,
+            'net'         => $net,
+            'prixMoyen'   => $kwh > 0 ? $brut / $kwh : 0,
+            'annulees'    => (clone $base)->where('statut', 'annulee')->count(),
+            'enAttente'   => (clone $base)->where('statut', 'en_attente')->count(),
+        ]);
+
+        return $pdf->download("rapport-{$mois}.pdf");
+    }
+
     /**
      * Recharge SIMULÉE de crédits (démo uniquement).
      */
-     public function recharger(Request $request): JsonResponse
+    public function recharger(Request $request): JsonResponse
     {
         $user = $request->user();
 
@@ -324,6 +497,7 @@ class TransactionController extends Controller
 
         return response()->json(['credits' => $user->refresh()->credits]);
     }
+
     /**
      * Reçu PDF d'une commande confirmée (acheteur ou producteur concerné).
      */
@@ -339,7 +513,7 @@ class TransactionController extends Controller
         $estProducteur = (int) $transaction->offre?->producteur_id === (int) $userId;
         $estAcheteur   = (int) $transaction->consommateur_id === (int) $userId;
 
-        if (! $estProducteur && ! $estAcheteur) {
+        if (!$estProducteur && !$estAcheteur) {
             return response()->json(['message' => 'Action non autorisée.'], 403);
         }
 

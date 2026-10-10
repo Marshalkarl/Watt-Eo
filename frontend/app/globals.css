@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -5423,3 +5424,1105 @@ body {
 .admin-badge.is-wait { background: #fff4e0; color: #a15c00; }
 
 .admin-pager { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; color: #718078; }
+
+.dashboard-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notif {
+  position: relative;
+}
+
+.notif-bell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #e2ebe4;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.notif-bell:hover {
+  background: #f0f7f1;
+}
+
+.notif-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #d64545;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 50;
+  width: min(360px, calc(100vw - 24px));
+  max-height: 440px;
+  overflow-y: auto;
+  border: 1px solid #e2ebe4;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(24, 65, 42, 0.14);
+}
+
+.notif-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e8efe9;
+}
+
+.notif-panel-head button {
+  border: 0;
+  background: none;
+  color: #21834d;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.notif-empty {
+  padding: 24px 14px;
+  color: #718078;
+  text-align: center;
+}
+
+.notif-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notif-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0f4f1;
+  color: inherit;
+  text-decoration: none;
+}
+
+.notif-item:hover {
+  background: #f6faf7;
+}
+
+.notif-item.is-unread {
+  background: #f0f7f1;
+  box-shadow: inset 3px 0 0 #21834d;
+}
+
+.notif-item-title {
+  font-weight: 600;
+}
+
+.notif-item-text {
+  color: #4b5a51;
+  font-size: 14px;
+}
+
+.notif-item-date {
+  color: #718078;
+  font-size: 12px;
+}
+
+.transactions-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.profil-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.profil-sections {
+  display: grid;
+  gap: 20px;
+  max-width: 760px;
+}
+
+.profil-card {
+  padding: 22px;
+  border: 1px solid #e2ebe4;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.profil-card h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.profil-card > p {
+  margin: 0 0 16px;
+  color: #718078;
+}
+
+.profil-form {
+  display: grid;
+  gap: 14px;
+}
+
+.profil-field {
+  display: grid;
+  gap: 6px;
+}
+
+.profil-field label {
+  color: #4b5a51;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.profil-field input {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #d5e1d8;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+}
+
+.profil-field input:focus {
+  border-color: #21834d;
+  outline: 2px solid rgba(33, 131, 77, 0.2);
+}
+
+.profil-btn {
+  justify-self: start;
+  height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px;
+  background: #21834d;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.profil-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profil-btn-danger {
+  background: #d64545;
+}
+
+.profil-btn-ghost {
+  border: 1px solid #d5e1d8;
+  background: #fff;
+  color: #4b5a51;
+}
+
+.profil-card-danger {
+  border-color: #f0c9c9;
+}
+
+.profil-card-danger h2 {
+  color: #b03a3a;
+}
+
+.profil-list {
+  margin: 0 0 16px;
+  padding-left: 18px;
+  color: #4b5a51;
+  line-height: 1.6;
+}
+
+.profil-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* =========================================================
+   ANIMATIONS WATT-ÉO (à coller tout en bas de globals.css)
+   On anime "translate" et "opacity" (pas "transform") pour ne
+   pas écraser les effets de survol existants.
+   ========================================================= */
+
+:root {
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+@keyframes fade-up {
+  from { opacity: 0; translate: 0 22px; }
+  to   { opacity: 1; translate: 0 0; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pop-in {
+  from { opacity: 0; scale: .92; translate: 0 -6px; }
+  to   { opacity: 1; scale: 1;   translate: 0 0; }
+}
+@keyframes float {
+  0%, 100% { translate: 0 0; }
+  50%      { translate: 0 -12px; }
+}
+@keyframes float-soft {
+  0%, 100% { translate: 0 0; rotate: 0deg; }
+  50%      { translate: 0 -8px; rotate: 1deg; }
+}
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(76, 175, 106, .55); }
+  70%  { box-shadow: 0 0 0 14px rgba(76, 175, 106, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(76, 175, 106, 0); }
+}
+@keyframes sun-spin {
+  to { rotate: 360deg; }
+}
+@keyframes shimmer {
+  to { background-position: -200% 0; }
+}
+@keyframes badge-bounce {
+  0%, 100% { scale: 1; }
+  50%      { scale: 1.18; }
+}
+
+/* ---------- Apparition des pages ---------- */
+.dashboard-content,
+.mes-offres-content,
+.offres-content,
+.transactions-content,
+.nouvelle-offre-layout,
+.register-layout,
+.login-layout,
+.page,
+.profil-sections {
+  animation: fade-up .6s var(--ease) backwards;
+}
+
+/* ---------- Page d'accueil ---------- */
+.home-eyebrow      { animation: fade-up .6s var(--ease) .05s backwards; }
+.home-hero h1      { animation: fade-up .7s var(--ease) .15s backwards; }
+.home-description  { animation: fade-up .7s var(--ease) .25s backwards; }
+.home-hero-actions { animation: fade-up .7s var(--ease) .35s backwards; }
+.home-community    { animation: fade-up .7s var(--ease) .45s backwards; }
+.home-hero-visual  { animation: fade-in .9s var(--ease) .3s backwards; }
+
+/* La grande carte visuelle flotte doucement */
+.home-visual-card  { animation: float 6s ease-in-out infinite; }
+.home-impact-card  { animation: float-soft 5s ease-in-out -1.5s infinite; }
+.home-offer-preview{ animation: float-soft 7s ease-in-out -3s infinite; }
+
+/* Soleil qui tourne doucement + points de carte qui pulsent */
+.home-sun { position: relative; }
+.home-sun::before {
+  content: "";
+  position: absolute;
+  inset: -22px;
+  border: 2px dashed rgba(245, 184, 61, .55);
+  border-radius: 50%;
+  animation: sun-spin 18s linear infinite;
+}
+.home-map-point { animation: pulse-ring 2.2s ease-out infinite; }
+.point-two      { animation-delay: .7s; }
+.point-three    { animation-delay: 1.4s; }
+
+/* ---------- Cartes : apparition en cascade ---------- */
+.grid > *,
+.offres-grid > *,
+.mes-offres-grid > *,
+.dashboard-stats > *,
+.dashboard-charts > *,
+.mes-offres-summary > *,
+.home-steps > *,
+.home-stats > div,
+.register-benefit,
+.login-benefit {
+  animation: fade-up .6s var(--ease) backwards;
+}
+:is(.grid, .offres-grid, .mes-offres-grid, .dashboard-stats,
+    .dashboard-charts, .mes-offres-summary, .home-steps, .home-stats,
+    .register-benefits, .login-benefits) > :nth-child(1) { animation-delay: .05s; }
+:is(.grid, .offres-grid, .mes-offres-grid, .dashboard-stats,
+    .dashboard-charts, .mes-offres-summary, .home-steps, .home-stats,
+    .register-benefits, .login-benefits) > :nth-child(2) { animation-delay: .12s; }
+:is(.grid, .offres-grid, .mes-offres-grid, .dashboard-stats,
+    .dashboard-charts, .mes-offres-summary, .home-steps, .home-stats,
+    .register-benefits, .login-benefits) > :nth-child(3) { animation-delay: .19s; }
+:is(.grid, .offres-grid, .mes-offres-grid, .dashboard-stats,
+    .dashboard-charts, .mes-offres-summary, .home-steps, .home-stats,
+    .register-benefits, .login-benefits) > :nth-child(4) { animation-delay: .26s; }
+:is(.grid, .offres-grid, .mes-offres-grid, .dashboard-stats,
+    .dashboard-charts, .mes-offres-summary, .home-steps, .home-stats,
+    .register-benefits, .login-benefits) > :nth-child(5) { animation-delay: .33s; }
+:is(.grid, .offres-grid, .mes-offres-grid, .dashboard-stats,
+    .dashboard-charts, .mes-offres-summary, .home-steps, .home-stats,
+    .register-benefits, .login-benefits) > :nth-child(n+6) { animation-delay: .4s; }
+
+/* ---------- Cartes : survol vivant ---------- */
+.card,
+.offre-card,
+.mes-offres-card,
+.dashboard-stat,
+.dashboard-chart-card,
+.home-step,
+.mes-offres-summary-card,
+.profil-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform .35s var(--ease), box-shadow .35s var(--ease),
+              border-color .35s var(--ease);
+}
+.card:hover,
+.offre-card:hover,
+.mes-offres-card:hover,
+.dashboard-stat:hover,
+.dashboard-chart-card:hover,
+.home-step:hover,
+.mes-offres-summary-card:hover {
+  transform: translateY(-6px) scale(1.015);
+  border-color: var(--green-200);
+  box-shadow: 0 18px 40px rgba(28, 74, 43, .14);
+}
+
+/* Reflet lumineux qui traverse la carte au survol */
+.card::after,
+.offre-card::after,
+.mes-offres-card::after,
+.dashboard-stat::after,
+.home-step::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, .55), transparent);
+  transform: skewX(-18deg);
+  pointer-events: none;
+}
+.card:hover::after,
+.offre-card:hover::after,
+.mes-offres-card:hover::after,
+.dashboard-stat:hover::after,
+.home-step:hover::after {
+  left: 140%;
+  transition: left .8s var(--ease);
+}
+
+/* Icônes qui rebondissent quand on survole leur carte */
+.dashboard-stat-icon,
+.home-step-icon,
+.mes-offres-card-icon,
+.mes-offres-summary-icon,
+.offre-avatar {
+  transition: transform .4s var(--ease);
+}
+.dashboard-stat:hover .dashboard-stat-icon,
+.home-step:hover .home-step-icon,
+.mes-offres-card:hover .mes-offres-card-icon,
+.mes-offres-summary-card:hover .mes-offres-summary-icon,
+.offre-card:hover .offre-avatar {
+  transform: scale(1.15) rotate(-6deg);
+}
+
+/* Offre sélectionnée depuis la carte : petit "tape" d'attention */
+@keyframes select-bump {
+  0%   { scale: 1; }
+  40%  { scale: 1.03; }
+  100% { scale: 1; }
+}
+.offre-card-selected { animation: select-bump .5s var(--ease); }
+
+/* ---------- Boutons ---------- */
+.home-button,
+.btn,
+.mes-offres-create,
+.nouvelle-offre-submit,
+.register-submit,
+.login-submit,
+.offre-buy-button,
+.profil-btn,
+.transactions-action,
+.dashboard-recharge-form button,
+.navbar-logout,
+.navbar-register {
+  position: relative;
+  overflow: hidden;
+  transition: transform .25s var(--ease), box-shadow .25s var(--ease),
+              background .25s var(--ease);
+}
+.home-button:hover,
+.btn:hover,
+.mes-offres-create:hover,
+.nouvelle-offre-submit:hover:not(:disabled),
+.register-submit:hover:not(:disabled),
+.login-submit:hover:not(:disabled),
+.offre-buy-button:hover:not(:disabled),
+.profil-btn:hover:not(:disabled),
+.transactions-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(33, 131, 77, .25);
+}
+.home-button:active,
+.btn:active,
+.offre-buy-button:active,
+.register-submit:active,
+.login-submit:active,
+.nouvelle-offre-submit:active {
+  transform: translateY(0) scale(.97);
+}
+
+/* Bouton principal de l'accueil : pulsation d'appel à l'action */
+.home-hero-actions .home-button-dark { animation: pulse-ring 2.6s ease-out 1.2s infinite; }
+
+/* ---------- Navigation ---------- */
+.navbar-link,
+.dashboard-nav a,
+.home-nav a {
+  position: relative;
+}
+.dashboard-nav a::after,
+.home-nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 100%;
+  height: 2px;
+  background: var(--green-500);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .3s var(--ease);
+}
+.dashboard-nav a:hover::after,
+.home-nav a:hover::after { transform: scaleX(1); }
+
+.home-menu-panel.is-open,
+.navbar-content.ouvert { animation: pop-in .25s var(--ease); }
+
+/* ---------- Notifications ---------- */
+.notif-panel  { transform-origin: top right; animation: pop-in .22s var(--ease); }
+.notif-badge  { animation: badge-bounce 1.6s ease-in-out infinite; }
+.notif-bell:hover { animation: float-soft .6s ease; }
+.notif-item   { animation: fade-in .3s ease backwards; }
+
+/* ---------- Tableaux ---------- */
+.transactions-table tbody tr,
+.admin-table tbody tr {
+  animation: fade-up .5s var(--ease) backwards;
+  transition: background .2s ease;
+}
+.transactions-table tbody tr:nth-child(1), .admin-table tbody tr:nth-child(1) { animation-delay: .04s; }
+.transactions-table tbody tr:nth-child(2), .admin-table tbody tr:nth-child(2) { animation-delay: .08s; }
+.transactions-table tbody tr:nth-child(3), .admin-table tbody tr:nth-child(3) { animation-delay: .12s; }
+.transactions-table tbody tr:nth-child(4), .admin-table tbody tr:nth-child(4) { animation-delay: .16s; }
+.transactions-table tbody tr:nth-child(5), .admin-table tbody tr:nth-child(5) { animation-delay: .20s; }
+.transactions-table tbody tr:nth-child(n+6), .admin-table tbody tr:nth-child(n+6) { animation-delay: .24s; }
+
+/* ---------- Formulaires, messages, badges ---------- */
+.register-field input,
+.login-field input,
+.nouvelle-offre-field input,
+.profil-field input {
+  transition: border-color .2s ease, box-shadow .25s ease, translate .25s var(--ease);
+}
+.register-field input:focus,
+.login-field input:focus,
+.nouvelle-offre-field input:focus,
+.profil-field input:focus { translate: 0 -2px; }
+
+.register-role-option { transition: transform .25s var(--ease), border-color .2s, background .2s; }
+.register-role-option:hover { transform: translateX(4px); }
+
+.dashboard-alert,
+.offres-notice,
+.register-error,
+.login-error,
+.nouvelle-offre-error,
+.transactions-error,
+.mes-offres-alert { animation: pop-in .35s var(--ease); }
+
+.mes-offres-status-dot,
+.register-kicker-dot,
+.login-kicker-dot,
+.home-status-dot,
+.dashboard-role-dot { animation: pulse-ring 2s ease-out infinite; }
+
+/* ---------- Panneaux d'accueil des formulaires ---------- */
+.register-intro,
+.login-intro { background-size: 160% 160%; animation: shimmer 14s ease-in-out infinite alternate; }
+.register-form-side,
+.login-form-side,
+.nouvelle-offre-panel { animation: fade-up .7s var(--ease) .15s backwards; }
+
+/* ---------- Cartes d'accueil au scroll (navigateurs récents) ---------- */
+@supports (animation-timeline: view()) {
+  .home-step,
+  .home-stats > div,
+  .home-section-heading,
+  .home-cta {
+    animation: fade-up linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 45%;
+  }
+}
+
+/* ---------- Respect de l'accessibilité ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+/* =========================================================
+   EFFETS D'ACHAT / TRANSACTIONS
+   ========================================================= */
+
+/* ---------- Célébration d'achat ---------- */
+.achat-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(24, 53, 38, .45);
+  backdrop-filter: blur(5px);
+  animation: fade-in .25s ease;
+}
+
+.achat-carte {
+  position: relative;
+  overflow: hidden;
+  width: min(100%, 400px);
+  padding: 34px 28px 30px;
+  border-radius: 24px;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 30px 70px rgba(24, 65, 42, .3);
+  animation: achat-entree .6s cubic-bezier(.34, 1.56, .64, 1);
+}
+@keyframes achat-entree {
+  from { opacity: 0; transform: scale(.7) translateY(30px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.achat-carte h2 {
+  margin: 18px 0 8px;
+  font-size: 24px;
+  animation: fade-up .5s var(--ease) .55s backwards;
+}
+.achat-carte p {
+  margin: 0;
+  color: #718078;
+  font-size: 14px;
+  line-height: 1.6;
+  animation: fade-up .5s var(--ease) .65s backwards;
+}
+
+/* Coche qui se dessine */
+.achat-check {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto;
+  display: block;
+  border-radius: 50%;
+  animation: pulse-ring 1.6s ease-out .5s 2;
+}
+.achat-check-cercle {
+  stroke: #4caf6a;
+  stroke-width: 3;
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  animation: trace .7s ease-out .15s forwards;
+}
+.achat-check-trait {
+  stroke: #21834d;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: trace .45s ease-out .75s forwards;
+}
+@keyframes trace {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Récapitulatif */
+.achat-details {
+  display: grid;
+  gap: 8px;
+  margin: 20px 0 0;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f1f8f2;
+  animation: fade-up .5s var(--ease) .75s backwards;
+}
+.achat-details div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+.achat-details dt { color: #718078; }
+.achat-details dd { margin: 0; color: #183b29; font-weight: 700; }
+
+.achat-fermer {
+  margin-top: 22px;
+  min-height: 46px;
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  background: #21834d;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  animation: fade-up .5s var(--ease) .85s backwards;
+  transition: background .2s, transform .2s;
+}
+.achat-fermer:hover { background: #176b3d; transform: translateY(-2px); }
+
+/* Barre de fermeture automatique */
+.achat-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  width: 100%;
+  background: linear-gradient(90deg, #4caf6a, #f5b83d);
+  transform-origin: left;
+  animation: achat-progress linear forwards;
+}
+@keyframes achat-progress {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* Confettis */
+.achat-confettis {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.achat-confettis span {
+  position: absolute;
+  top: -20px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti-chute linear forwards;
+}
+@keyframes confetti-chute {
+  0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(105vh) translateX(40px) rotate(720deg); }
+}
+
+/* ---------- Bouton en cours de traitement ---------- */
+.offre-buy-button.is-loading,
+.nouvelle-offre-submit.is-loading,
+.dashboard-recharge-form button.is-loading {
+  pointer-events: none;
+  color: transparent;
+}
+.offre-buy-button.is-loading::before,
+.nouvelle-offre-submit.is-loading::before,
+.dashboard-recharge-form button.is-loading::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 2px solid rgba(255, 255, 255, .45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: dashboard-spin .7s linear infinite;
+}
+
+/* ---------- Total qui réagit à la quantité ---------- */
+.offre-buy-total { transition: color .2s, scale .25s var(--ease); }
+.offre-quantity-input:focus-within ~ .offre-buy-total { color: #21834d; scale: 1.08; }
+
+/* ---------- Compteurs animés ---------- */
+.nombre-anime {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+.offres-credits { transition: box-shadow .3s, background .3s; }
+
+
+/* ---------- Message de succès (déjà dans ton code) ---------- */
+.offres-notice-success,
+.dashboard-alert-success {
+  position: relative;
+  overflow: hidden;
+  animation: pop-in .4s var(--ease), succes-flash 1.4s ease-out;
+}
+.offres-notice-success::after,
+.dashboard-alert-success::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, .8), transparent);
+  transform: skewX(-18deg);
+  animation: reflet 1.4s ease-out .2s;
+}
+@keyframes succes-flash {
+  0%   { box-shadow: 0 0 0 0 rgba(76, 175, 106, .5); }
+  100% { box-shadow: 0 0 0 16px rgba(76, 175, 106, 0); }
+}
+@keyframes reflet {
+  to { left: 140%; }
+}
+
+/* ---------- Transactions : lignes et statuts ---------- */
+/* La transaction la plus récente (en haut) s'illumine à l'arrivée */
+.transactions-table tbody tr:first-child {
+  animation: fade-up .5s var(--ease) .04s backwards, ligne-nouvelle 2.4s ease-out .5s;
+}
+@keyframes ligne-nouvelle {
+  0%, 30% { background: #e4f5e8; box-shadow: inset 4px 0 0 #21834d; }
+  100%    { background: transparent; box-shadow: inset 4px 0 0 transparent; }
+}
+
+.transactions-status {
+  animation: statut-pop .5s cubic-bezier(.34, 1.56, .64, 1) backwards;
+}
+@keyframes statut-pop {
+  from { opacity: 0; scale: .5; }
+  to   { opacity: 1; scale: 1; }
+}
+
+/* En attente / en cours : le badge respire */
+.transactions-status-en-attente,
+.transactions-status-en-cours {
+  animation: statut-pop .5s cubic-bezier(.34, 1.56, .64, 1) backwards,
+             respire 2s ease-in-out .5s infinite;
+}
+@keyframes respire {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 162, 28, .45); }
+  50%      { box-shadow: 0 0 0 6px rgba(224, 162, 28, 0); }
+}
+
+/* Refusée / annulée / échouée : petite secousse */
+.transactions-status-annule,
+.transactions-status-annulee,
+.transactions-status-echoue,
+.transactions-status-refuse {
+  animation: statut-pop .5s cubic-bezier(.34, 1.56, .64, 1) backwards,
+             secousse .5s ease .5s;
+}
+@keyframes secousse {
+  0%, 100% { translate: 0 0; }
+  20%      { translate: -4px 0; }
+  40%      { translate: 4px 0; }
+  60%      { translate: -3px 0; }
+  80%      { translate: 3px 0; }
+}
+
+/* Boutons d'action des transactions (confirmer / refuser / annuler) */
+.transactions-action-btn { transition: background .2s, color .2s, transform .2s var(--ease); }
+.transactions-action-btn:hover:not(:disabled) {
+  background: #16a34a;
+  color: #fff;
+  transform: translateY(-2px);
+}
+.transactions-action-btn:active:not(:disabled) { transform: scale(.95); }
+
+/* Cartes de commandes (page .page) */
+.buy-row button.is-loading { opacity: .7; cursor: wait; }
+
+@media (prefers-reduced-motion: reduce) {
+  .achat-confettis { display: none; }
+}
+
+.credits-bump {
+  animation: pulse-ring 1.4s ease-out, badge-bounce .6s ease;
+}
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  max-width: min(380px, calc(100vw - 32px));
+  padding: 14px 18px;
+  border: 1px solid #dcebe0;
+  border-radius: 14px;
+  background: #fff;
+  color: #183b29;
+  font-size: 14px;
+  box-shadow: 0 16px 40px rgba(24, 65, 42, .18);
+  cursor: pointer;
+  animation: toast-entree .5s cubic-bezier(.34, 1.56, .64, 1);
+}
+@keyframes toast-entree {
+  from { opacity: 0; transform: translateX(40px) scale(.9); }
+  to   { opacity: 1; transform: none; }
+}
+.toast-icone {
+  display: grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e4f5e8;
+  color: #21834d;
+  font-weight: 800;
+  animation: pulse-ring 1.4s ease-out 1;
+}
+.toast-info .toast-icone   { background: #e5f2fa; color: #2f7fb0; }
+.toast-erreur .toast-icone { background: #fdecea; color: #b4473b; }
+.toast-barre {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #4caf6a, #f5b83d);
+  transform-origin: left;
+  animation: achat-progress linear forwards;
+}
+
+/* ---------- Fenêtre de confirmation ---------- */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(24, 53, 38, .45);
+  backdrop-filter: blur(5px);
+  animation: fade-in .2s ease;
+}
+.confirm-carte {
+  width: min(100%, 400px);
+  padding: 28px;
+  border-radius: 20px;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 30px 70px rgba(24, 65, 42, .3);
+  animation: achat-entree .45s cubic-bezier(.34, 1.56, .64, 1);
+}
+.confirm-icone {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff4e0;
+  color: #a15c00;
+  font-size: 26px;
+  animation: secousse .6s ease .3s;
+}
+.confirm-carte h2 { margin: 0 0 8px; font-size: 20px; }
+.confirm-carte p  { margin: 0; color: #718078; font-size: 14px; line-height: 1.6; }
+.confirm-actions  { display: flex; gap: 10px; margin-top: 22px; }
+.confirm-actions button {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 11px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .2s var(--ease), background .2s;
+}
+.confirm-actions button:hover:not(:disabled) { transform: translateY(-2px); }
+.confirm-actions button:disabled { opacity: .6; cursor: wait; }
+.confirm-non { border: 1px solid #dce5df; background: #fff; color: #4b5a51; }
+.confirm-oui { border: 0; background: #d64545; color: #fff; }
+.confirm-oui:hover:not(:disabled) { background: #b93a3a; }
+
+/* ---------- Transactions ---------- */
+/* La ligne annulée clignote en rouge doux puis s'apaise */
+.transactions-table tbody tr.transaction-row-flash {
+  animation: ligne-annulee 1.8s ease-out;
+}
+@keyframes ligne-annulee {
+  0%, 25% { background: #fff1ee; box-shadow: inset 4px 0 0 #d65a4a; }
+  100%    { background: transparent; box-shadow: inset 4px 0 0 transparent; }
+}
+
+/* Statuts "refusee" et "echouee" (le texte affiché vient de l'API) */
+.transactions-status-refusee,
+.transactions-status-echouee {
+  background: #fff0ee;
+  color: #b4473b;
+  animation: statut-pop .5s cubic-bezier(.34, 1.56, .64, 1) backwards,
+             secousse .5s ease .5s;
+}
+.transactions-status-annulee { background: #fff0ee; color: #b4473b; }
+
+.transactions-count span { font-variant-numeric: tabular-nums; }
+
+/* ---------- Dashboard ---------- */
+.dashboard-stat-value { font-variant-numeric: tabular-nums; }
+.dashboard-recharge-form button { min-width: 130px; }
+
+/* ---------- Commandes en attente ---------- */
+.commandes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
+}
+.commandes-grid > * { animation: fade-up .6s var(--ease) backwards; }
+.commandes-grid > :nth-child(2) { animation-delay: .07s; }
+.commandes-grid > :nth-child(3) { animation-delay: .14s; }
+.commandes-grid > :nth-child(4) { animation-delay: .21s; }
+.commandes-grid > :nth-child(n+5) { animation-delay: .28s; }
+
+.commande-card {
+  position: relative;
+  overflow: hidden;
+  padding: 22px;
+  border: 1px solid #e7eee8;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(24 65 42 / 5%);
+  transition: transform .35s var(--ease), box-shadow .35s var(--ease),
+              border-color .35s var(--ease);
+}
+.commande-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--green-200);
+  box-shadow: 0 18px 40px rgba(28, 74, 43, .13);
+}
+.commande-card .mes-offres-details { margin-top: 18px; }
+.commande-meta { margin: 14px 0 0; color: #849087; font-size: 12px; }
+
+.commande-actions { display: flex; gap: 10px; margin-top: 18px; }
+.commande-actions button {
+  position: relative;
+  min-height: 42px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .2s var(--ease), background .2s, box-shadow .2s;
+}
+.commande-actions button:hover:not(:disabled) { transform: translateY(-2px); }
+.commande-actions button:active:not(:disabled) { transform: scale(.96); }
+.commande-actions button:disabled { opacity: .6; cursor: wait; }
+.commande-confirmer {
+  flex: 1.4;
+  border: 0;
+  background: #21834d;
+  color: #fff;
+}
+.commande-confirmer:hover:not(:disabled) {
+  background: #176b3d;
+  box-shadow: 0 10px 22px rgba(33, 131, 77, .25);
+}
+.commande-confirmer.is-loading { color: transparent; }
+.commande-confirmer.is-loading::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 2px solid rgba(255, 255, 255, .45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: dashboard-spin .7s linear infinite;
+}
+.commande-refuser {
+  flex: 1;
+  border: 1px solid #f0dddd;
+  background: #fff;
+  color: #a34b43;
+}
+.commande-refuser:hover:not(:disabled) { background: #fff5f4; }
+
+/* Sortie des cartes : vert vers la droite (confirmée), rouge vers la gauche */
+.is-sortie-confirmee {
+  animation: sortie-confirmee .5s ease-in forwards !important;
+  pointer-events: none;
+}
+.is-sortie-refusee,
+.mes-offres-card.is-sortante {
+  animation: sortie-refusee .45s ease-in forwards !important;
+  pointer-events: none;
+}
+@keyframes sortie-confirmee {
+  0%   { box-shadow: 0 0 0 0 rgba(76, 175, 106, .6); border-color: #4caf6a; }
+  35%  { scale: 1.03; box-shadow: 0 0 0 10px rgba(76, 175, 106, 0); }
+  100% { opacity: 0; translate: 70px 0; scale: .9; }
+}
+@keyframes sortie-refusee {
+  0%   { border-color: #d65a4a; }
+  100% { opacity: 0; translate: -70px 0; scale: .9; }
+}
+
+/* ---------- Fenêtres de confirmation (variantes) ---------- */
+.confirm-icone-danger { background: #fdecea; color: #b4473b; }
+
+.confirm-champ {
+  display: grid;
+  gap: 7px;
+  margin-top: 18px;
+  text-align: left;
+}
+.confirm-champ span { color: #34483d; font-size: 12px; font-weight: 650; }
+.confirm-champ textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1px solid #dfe7df;
+  border-radius: 10px;
+  outline: none;
+  background: #fff;
+  color: #183b29;
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+  transition: border-color .2s, box-shadow .25s;
+}
+.confirm-champ textarea:focus {
+  border-color: #6b9b73;
+  box-shadow: 0 0 0 3px rgb(107 155 115 / 13%);
+}
+
+/* ---------- Mes offres ---------- */
+.mes-offres-card { transition: opacity .35s ease, filter .35s ease,
+  transform .35s var(--ease), box-shadow .35s var(--ease), border-color .35s var(--ease); }
+.mes-offres-card.is-attenuee { opacity: .78; }
+.mes-offres-card.is-attenuee .mes-offres-card-icon { filter: grayscale(1); }
+
+.mes-offres-status { animation: statut-pop .5s cubic-bezier(.34, 1.56, .64, 1) backwards; }
+.mes-offres-status.is-visible .mes-offres-status-dot { animation: pulse-ring 2s ease-out infinite; }
+
+.mes-offres-summary-card strong { font-variant-numeric: tabular-nums; }

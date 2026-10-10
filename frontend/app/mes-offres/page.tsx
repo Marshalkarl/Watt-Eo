@@ -7,6 +7,11 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { api, messageFromError } from "@/lib/api";
 import type { Offre } from "@/lib/types";
+import NotificationBell from "@/components/NotificationBell";
+import NombreAnime from "@/components/NombreAnime";
+import Toast, { type ToastData } from "@/components/Toast";
+
+const DUREE_SORTIE = 450;
 
 export default function MesOffresPage() {
   const { user, token, loading } = useAuth();
@@ -16,42 +21,73 @@ export default function MesOffresPage() {
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState("");
   const [actionEnCours, setActionEnCours] = useState<number | null>(null);
+  const [aSupprimer, setASupprimer] = useState<Offre | null>(null);
+  const [sortantId, setSortantId] = useState<number | null>(null);
+  const [toast, setToast] = useState<ToastData>(null);
 
-  const charger = useCallback(async () => {
-    if (!token) {
-      setFetching(false);
-      return;
-    }
+  // Valeurs simples pour ne pas relancer le chargement à chaque changement de `user`.
+  const connecte = Boolean(user);
+  const role = user?.role;
 
-    try {
-      setError("");
-      const resultat = await api<Offre[]>("/mes-offres", { token });
-      setOffres(resultat);
-    } catch (err) {
-      setError(messageFromError(err));
-    } finally {
-      setFetching(false);
-    }
-  }, [token]);
+  const fermerToast = useCallback(() => setToast(null), []);
+  const notifier = useCallback(
+    (type: "succes" | "info" | "erreur", texte: string) =>
+      setToast({ id: Date.now(), type, texte }),
+    [],
+  );
+
+  const charger = useCallback(
+    async (silencieux = false) => {
+      if (!token) {
+        setFetching(false);
+        return;
+      }
+
+      try {
+        const resultat = await api<Offre[]>("/mes-offres", { token });
+        setError("");
+        setOffres(resultat);
+      } catch (err) {
+        // Après une action réussie, un échec de rafraîchissement n'est pas bloquant.
+        if (!silencieux) setError(messageFromError(err));
+      } finally {
+        setFetching(false);
+      }
+    },
+    [token],
+  );
 
   useEffect(() => {
     if (loading) return;
 
-    if (!user) {
+    if (!connecte) {
       router.replace("/login");
       return;
     }
 
-    if (user.role !== "producteur") {
+    if (role !== "producteur") {
       router.replace("/dashboard");
       return;
     }
 
     void charger();
-  }, [loading, user, router, charger]);
+  }, [loading, connecte, role, router, charger]);
+
+  // Échap ferme la fenêtre de suppression
+  useEffect(() => {
+    if (!aSupprimer) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && actionEnCours === null) setASupprimer(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [aSupprimer, actionEnCours]);
 
   async function basculer(offre: Offre) {
     if (!token) return;
+
+    const visibleApres = !offre.disponible;
 
     setError("");
     setActionEnCours(offre.id);
@@ -60,35 +96,52 @@ export default function MesOffresPage() {
       await api(`/offres/${offre.id}`, {
         method: "PUT",
         token,
-        body: { disponible: !offre.disponible },
+        body: { disponible: visibleApres },
       });
-      await charger();
     } catch (err) {
       setError(messageFromError(err));
-    } finally {
       setActionEnCours(null);
-    }
-  }
-
-  async function supprimer(offre: Offre) {
-    if (
-      !token ||
-      !window.confirm("Supprimer définitivement cette offre ?")
-    ) {
       return;
     }
+
+    // Mise à jour immédiate de la carte, puis synchronisation discrète.
+    setOffres((prev) =>
+      prev.map((o) =>
+        o.id === offre.id ? { ...o, disponible: visibleApres } : o,
+      ),
+    );
+    setActionEnCours(null);
+    notifier(
+      visibleApres ? "succes" : "info",
+      visibleApres ? "Offre de nouveau visible." : "Offre masquée.",
+    );
+    await charger(true);
+  }
+
+  async function confirmerSuppression() {
+    const offre = aSupprimer;
+    if (!offre || !token) return;
 
     setError("");
     setActionEnCours(offre.id);
 
     try {
       await api(`/offres/${offre.id}`, { method: "DELETE", token });
-      await charger();
     } catch (err) {
       setError(messageFromError(err));
-    } finally {
       setActionEnCours(null);
+      setASupprimer(null);
+      return;
     }
+
+    setASupprimer(null);
+    setSortantId(offre.id);
+    await new Promise((resolve) => setTimeout(resolve, DUREE_SORTIE));
+    setOffres((prev) => prev.filter((o) => o.id !== offre.id));
+    setSortantId(null);
+    setActionEnCours(null);
+    notifier("info", "Offre supprimée.");
+    await charger(true);
   }
 
   if (loading || !user) {
@@ -101,7 +154,7 @@ export default function MesOffresPage() {
   }
 
   const offresDisponibles = offres.filter(
-    (offre) => offre.disponible && offre.quantite_kwh > 0,
+    (offre) => offre.disponible && Number(offre.quantite_kwh) > 0,
   ).length;
 
   return (
@@ -128,6 +181,18 @@ export default function MesOffresPage() {
           <Link href="/transactions">Mes ventes</Link>
           <Link href="/offres">Explorer les offres</Link>
         </nav>
+
+        <div className="dashboard-actions">
+          <NotificationBell />
+          <Link
+            href="/profil"
+            className="notif-bell profil-link"
+            aria-label="Mon profil"
+            title="Mon profil"
+          >
+            <span aria-hidden="true">👤</span>
+          </Link>
+        </div>
       </header>
 
       <div className="mes-offres-content">
@@ -154,7 +219,9 @@ export default function MesOffresPage() {
             </span>
             <div>
               <span className="mes-offres-summary-label">Offres publiées</span>
-              <strong>{offres.length}</strong>
+              <strong>
+                <NombreAnime valeur={offres.length} depuis={0} duree={700} />
+              </strong>
             </div>
           </article>
 
@@ -164,7 +231,13 @@ export default function MesOffresPage() {
             </span>
             <div>
               <span className="mes-offres-summary-label">Offres visibles</span>
-              <strong>{offresDisponibles}</strong>
+              <strong>
+                <NombreAnime
+                  valeur={offresDisponibles}
+                  depuis={0}
+                  duree={700}
+                />
+              </strong>
             </div>
           </article>
         </section>
@@ -209,24 +282,33 @@ export default function MesOffresPage() {
 
             <div className="mes-offres-grid">
               {offres.map((offre) => {
-                const epuisee = offre.quantite_kwh <= 0;
-                const visible = offre.disponible && !epuisee;
+                const epuisee = Number(offre.quantite_kwh) <= 0;
+                const visible = Boolean(offre.disponible) && !epuisee;
                 const enCours = actionEnCours === offre.id;
+                const etat = visible ? "visible" : epuisee ? "empty" : "hidden";
+                const latitude = Number(offre.latitude);
+                const longitude = Number(offre.longitude);
+                const aUnePosition =
+                  offre.latitude != null &&
+                  offre.longitude != null &&
+                  Number.isFinite(latitude) &&
+                  Number.isFinite(longitude);
 
                 return (
-                  <article className="mes-offres-card" key={offre.id}>
+                  <article
+                    className={`mes-offres-card${
+                      visible ? "" : " is-attenuee"
+                    }${sortantId === offre.id ? " is-sortante" : ""}`}
+                    key={offre.id}
+                  >
                     <div className="mes-offres-card-top">
                       <span className="mes-offres-card-icon" aria-hidden="true">
                         ☀️
                       </span>
+                      {/* key = état : l'animation rejoue quand le statut change */}
                       <span
-                        className={`mes-offres-status ${
-                          visible
-                            ? "is-visible"
-                            : epuisee
-                              ? "is-empty"
-                              : "is-hidden"
-                        }`}
+                        key={etat}
+                        className={`mes-offres-status is-${etat}`}
                       >
                         <span className="mes-offres-status-dot" />
                         {visible ? "Visible" : epuisee ? "Épuisée" : "Masquée"}
@@ -249,12 +331,14 @@ export default function MesOffresPage() {
                       </div>
                     </div>
 
-                    <div className="mes-offres-location">
-                      <span aria-hidden="true">⌖</span>
-                      <span>
-                        {offre.latitude}, {offre.longitude}
-                      </span>
-                    </div>
+                    {aUnePosition && (
+                      <div className="mes-offres-location">
+                        <span aria-hidden="true">⌖</span>
+                        <span>
+                          {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                        </span>
+                      </div>
+                    )}
 
                     <div className="mes-offres-actions">
                       <button
@@ -273,7 +357,7 @@ export default function MesOffresPage() {
                       <button
                         type="button"
                         className="mes-offres-delete"
-                        onClick={() => void supprimer(offre)}
+                        onClick={() => setASupprimer(offre)}
                         disabled={enCours}
                         aria-label={`Supprimer l’offre ${offre.id}`}
                         title="Supprimer l’offre"
@@ -288,6 +372,51 @@ export default function MesOffresPage() {
           </section>
         )}
       </div>
+
+      {aSupprimer && (
+        <div
+          className="confirm-overlay"
+          onClick={() => actionEnCours === null && setASupprimer(null)}
+        >
+          <div
+            className="confirm-carte"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="suppr-titre"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="confirm-icone confirm-icone-danger" aria-hidden="true">
+              🗑
+            </div>
+            <h2 id="suppr-titre">Supprimer cette offre ?</h2>
+            <p>
+              Offre #{aSupprimer.id} · {aSupprimer.quantite_kwh} kWh à{" "}
+              {aSupprimer.prix_kwh} crédits. Cette action est définitive.
+            </p>
+
+            <div className="confirm-actions">
+              <button
+                type="button"
+                className="confirm-non"
+                disabled={actionEnCours !== null}
+                onClick={() => setASupprimer(null)}
+              >
+                Garder
+              </button>
+              <button
+                type="button"
+                className="confirm-oui"
+                disabled={actionEnCours !== null}
+                onClick={() => void confirmerSuppression()}
+              >
+                {actionEnCours !== null ? "Suppression…" : "Supprimer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Toast toast={toast} onClose={fermerToast} />
     </main>
   );
 }

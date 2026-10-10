@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,12 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { api, messageFromError } from "@/lib/api";
 import type { DashboardData } from "@/lib/types";
+import NotificationBell from "@/components/NotificationBell";
+import NombreAnime from "@/components/NombreAnime";
+import AchatReussi from "@/components/AchatReussi";
+import Toast, { type ToastData } from "@/components/Toast";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api";
 
 const n = (v: number) =>
   v.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
@@ -34,31 +40,35 @@ const formaterJourComplet = (iso: string) => {
 
 const PERIODES = [7, 30, 90] as const;
 
-function construireStats(d: DashboardData) {
+type Stat = {
+  label: string;
+  valeur: number;
+  decimales: number;
+  unite?: string;
+  icon: string;
+};
+
+function construireStats(d: DashboardData): Stat[] {
   if (d.role === "producteur") {
     return [
-      { label: "Crédits", value: n(d.credits), icon: "💳" },
-      { label: "Énergie vendue", value: `${n(d.kwh_vendus)} kWh`, icon: "⚡" },
-      { label: "Revenus nets", value: `${n(d.revenus)} crédits`, icon: "💰" },
-      { label: "Commissions Watt-Eo", value: `${n(d.commissions)} crédits`, icon: "🏷️" },
-      { label: "Nombre de ventes", value: n(d.nombre_ventes), icon: "📊" },
-      { label: "Offres actives", value: n(d.offres_actives), icon: "☀️" },
-      { label: "Énergie en vente", value: `${n(d.kwh_en_vente)} kWh`, icon: "🔋" },
-      { label: "CO₂ évité", value: `${n(d.co2_evite_kg)} kg`, icon: "🌱" },
+      { label: "Crédits", valeur: Number(d.credits), decimales: 2, icon: "💳" },
+      { label: "Énergie vendue", valeur: Number(d.kwh_vendus), decimales: 2, unite: "kWh", icon: "⚡" },
+      { label: "Revenus nets", valeur: Number(d.revenus), decimales: 2, unite: "crédits", icon: "💰" },
+      { label: "Commissions Watt-Eo", valeur: Number(d.commissions), decimales: 2, unite: "crédits", icon: "🏷️" },
+      { label: "Nombre de ventes", valeur: Number(d.nombre_ventes), decimales: 0, icon: "📊" },
+      { label: "Offres actives", valeur: Number(d.offres_actives), decimales: 0, icon: "☀️" },
+      { label: "Énergie en vente", valeur: Number(d.kwh_en_vente), decimales: 2, unite: "kWh", icon: "🔋" },
+      { label: "CO₂ évité", valeur: Number(d.co2_evite_kg), decimales: 2, unite: "kg", icon: "🌱" },
     ];
   }
 
   return [
-    { label: "Crédits", value: n(d.credits), icon: "💳" },
-    { label: "Énergie achetée", value: `${n(d.kwh_achetes)} kWh`, icon: "⚡" },
-    { label: "Dépenses", value: `${n(d.depenses)} crédits`, icon: "🧾" },
-    {
-      label: "Économies vs réseau",
-      value: `${n(d.economies)} crédits`,
-      icon: "📉",
-    },
-    { label: "Nombre d’achats", value: n(d.nombre_achats), icon: "🛍️" },
-    { label: "CO₂ évité", value: `${n(d.co2_evite_kg)} kg`, icon: "🌱" },
+    { label: "Crédits", valeur: Number(d.credits), decimales: 2, icon: "💳" },
+    { label: "Énergie achetée", valeur: Number(d.kwh_achetes), decimales: 2, unite: "kWh", icon: "⚡" },
+    { label: "Dépenses", valeur: Number(d.depenses), decimales: 2, unite: "crédits", icon: "🧾" },
+    { label: "Économies vs réseau", valeur: Number(d.economies), decimales: 2, unite: "crédits", icon: "📉" },
+    { label: "Nombre d’achats", valeur: Number(d.nombre_achats), decimales: 0, icon: "🛍️" },
+    { label: "CO₂ évité", valeur: Number(d.co2_evite_kg), decimales: 2, unite: "kg", icon: "🌱" },
   ];
 }
 
@@ -73,6 +83,8 @@ function GraphiqueJournalier({
   cle: "kwh" | "total";
   nom: string;
 }) {
+  const gradient = `degrade-${cle}`;
+
   return (
     <section className="dashboard-chart-card">
       <div className="dashboard-chart-heading">
@@ -91,6 +103,12 @@ function GraphiqueJournalier({
             data={donnees}
             margin={{ top: 12, right: 8, left: -16, bottom: 0 }}
           >
+            <defs>
+              <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#4caf6a" />
+                <stop offset="100%" stopColor="#21834d" />
+              </linearGradient>
+            </defs>
             <CartesianGrid
               stroke="#e8efe9"
               strokeDasharray="4 4"
@@ -121,9 +139,12 @@ function GraphiqueJournalier({
             <Bar
               dataKey={cle}
               name={nom}
-              fill="#21834d"
+              fill={`url(#${gradient})`}
               radius={[6, 6, 0, 0]}
               maxBarSize={24}
+              isAnimationActive
+              animationDuration={900}
+              animationEasing="ease-out"
             />
           </BarChart>
         </ResponsiveContainer>
@@ -139,26 +160,43 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [jours, setJours] = useState<number>(30);
   const [montant, setMontant] = useState("1000");
-  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [rechargementEnCours, setRechargementEnCours] = useState(false);
+  const [recharge, setRecharge] = useState<number | null>(null);
+  const [toast, setToast] = useState<ToastData>(null);
+  const [moisRapport, setMoisRapport] = useState(
+    new Date().toLocaleDateString("sv-SE").slice(0, 7), // « 2026-10 », heure locale
+  );
+  const [rapportEnCours, setRapportEnCours] = useState(false);
+
+  // Ignore les réponses arrivées en retard (changement rapide de période).
+  const requeteRef = useRef(0);
+
+  const fermerRecharge = useCallback(() => setRecharge(null), []);
+  const fermerToast = useCallback(() => setToast(null), []);
 
   const charger = useCallback(async () => {
-  if (!token || user?.role === "admin") return;
+    if (!token || user?.role === "admin") return;
 
-  try {
-    setData(
-      await api<DashboardData>(`/dashboard?jours=${jours}`, { token }),
-    );
-  } catch (err) {
-    setError(messageFromError(err));
-  }
+    const requete = ++requeteRef.current;
+
+    try {
+      const resultat = await api<DashboardData>(`/dashboard?jours=${jours}`, {
+        token,
+      });
+      if (requete !== requeteRef.current) return;
+      setError("");
+      setData(resultat);
+    } catch (err) {
+      if (requete !== requeteRef.current) return;
+      setError(messageFromError(err));
+    }
   }, [token, jours, user?.role]);
 
   useEffect(() => {
-  if (loading) return;
-  if (!user) router.replace("/login");
-  else if (user.role === "admin") router.replace("/admin");
+    if (loading) return;
+    if (!user) router.replace("/login");
+    else if (user.role === "admin") router.replace("/admin");
   }, [loading, user, router]);
 
   useEffect(() => {
@@ -167,23 +205,73 @@ export default function DashboardPage() {
 
   async function recharger(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setMessage("");
     setError("");
+
+    const valeur = Number(montant);
+    if (!Number.isFinite(valeur) || valeur <= 0) {
+      setError("Saisissez un montant valide.");
+      return;
+    }
+
     setRechargementEnCours(true);
 
     try {
       await api("/recharger", {
         method: "POST",
         token,
-        body: { montant: Number(montant) },
+        body: { montant: valeur },
       });
-
-      await Promise.all([refreshUser(), charger()]);
-      setMessage("Votre compte a été rechargé (simulation).");
     } catch (err) {
       setError(messageFromError(err));
-    } finally {
       setRechargementEnCours(false);
+      return;
+    }
+
+    // Le rechargement a réussi : on célèbre, puis on met à jour les chiffres.
+    setRecharge(valeur);
+    setRechargementEnCours(false);
+
+    try {
+      await Promise.all([refreshUser(), charger()]);
+    } catch {
+      /* non bloquant : la recharge est déjà enregistrée */
+    }
+  }
+
+  async function telechargerRapport(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
+    setRapportEnCours(true);
+
+    try {
+      const res = await fetch(
+        `${API_URL}/rapport-mensuel?mois=${moisRapport}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/pdf",
+          },
+        },
+      );
+      if (!res.ok) throw new Error("echec");
+
+      const url = URL.createObjectURL(await res.blob());
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `rapport-${moisRapport}.pdf`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      const [annee, mois] = moisRapport.split("-");
+      setToast({
+        id: Date.now(),
+        type: "succes",
+        texte: `Rapport ${mois}/${annee} téléchargé.`,
+      });
+    } catch {
+      setError("Impossible de générer le rapport.");
+    } finally {
+      setRapportEnCours(false);
     }
   }
 
@@ -238,17 +326,29 @@ export default function DashboardPage() {
           </Link>
         </nav>
 
-        <button
-          className="dashboard-logout"
-          type="button"
-          onClick={async () => {
-            await logout();
-            router.push("/login");
-          }}
-        >
-          <span aria-hidden="true">↗</span>
-          <span>Se déconnecter</span>
-        </button>
+        <div className="dashboard-actions">
+          <NotificationBell />
+          <Link
+            href="/profil"
+            className="notif-bell profil-link"
+            aria-label="Mon profil"
+            title="Mon profil"
+          >
+            <span aria-hidden="true">👤</span>
+          </Link>
+
+          <button
+            className="dashboard-logout"
+            type="button"
+            onClick={async () => {
+              await logout();
+              router.push("/login");
+            }}
+          >
+            <span aria-hidden="true">↗</span>
+            <span>Se déconnecter</span>
+          </button>
+        </div>
       </header>
 
       <div className="dashboard-content">
@@ -271,6 +371,44 @@ export default function DashboardPage() {
             {estProducteur ? "Producteur" : "Consommateur"}
           </span>
         </section>
+
+        {estProducteur && (
+          <section className="dashboard-recharge-card">
+            <div className="dashboard-recharge-copy">
+              <span className="dashboard-recharge-icon" aria-hidden="true">
+                ▤
+              </span>
+              <div>
+                <h2>Rapport mensuel</h2>
+                <p>Téléchargez le bilan de vos ventes du mois en PDF.</p>
+              </div>
+            </div>
+
+            <form
+              onSubmit={telechargerRapport}
+              className="dashboard-recharge-form"
+            >
+              <label className="dashboard-input-wrap">
+                <span className="sr-only">Mois du rapport</span>
+                <input
+                  type="month"
+                  value={moisRapport}
+                  onChange={(e) => setMoisRapport(e.target.value)}
+                  required
+                />
+              </label>
+              <button
+                type="submit"
+                className={rapportEnCours ? "is-loading" : ""}
+                aria-busy={rapportEnCours}
+                disabled={rapportEnCours}
+              >
+                {rapportEnCours ? "Génération…" : "Télécharger"}
+                {!rapportEnCours && <span aria-hidden="true"> →</span>}
+              </button>
+            </form>
+          </section>
+        )}
 
         {!estProducteur && (
           <section className="dashboard-recharge-card">
@@ -299,18 +437,17 @@ export default function DashboardPage() {
                 />
                 <span>crédits</span>
               </label>
-              <button type="submit" disabled={rechargementEnCours}>
+              <button
+                type="submit"
+                className={rechargementEnCours ? "is-loading" : ""}
+                aria-busy={rechargementEnCours}
+                disabled={rechargementEnCours}
+              >
                 {rechargementEnCours ? "Rechargement…" : "Recharger"}
                 {!rechargementEnCours && <span aria-hidden="true"> →</span>}
               </button>
             </form>
           </section>
-        )}
-
-        {message && (
-          <p className="dashboard-alert dashboard-alert-success" role="status">
-            <span aria-hidden="true">✓</span> {message}
-          </p>
         )}
 
         {error && (
@@ -342,7 +479,13 @@ export default function DashboardPage() {
                     </span>
                     <span className="dashboard-stat-label">{stat.label}</span>
                     <strong className="dashboard-stat-value">
-                      {stat.value}
+                      <NombreAnime
+                        valeur={stat.valeur}
+                        decimales={stat.decimales}
+                        depuis={0}
+                        fixe={false}
+                      />
+                      {stat.unite ? ` ${stat.unite}` : ""}
                     </strong>
                   </article>
                 ))}
@@ -384,7 +527,7 @@ export default function DashboardPage() {
                   <p>Ils se rempliront après votre première transaction.</p>
                 </div>
               ) : (
-                <div className="dashboard-charts">
+                <div className="dashboard-charts" key={jours}>
                   <GraphiqueJournalier
                     titre={
                       estProducteur
@@ -418,6 +561,20 @@ export default function DashboardPage() {
           )
         )}
       </div>
+
+      <AchatReussi
+        open={recharge !== null}
+        onClose={fermerRecharge}
+        titre="Recharge effectuée !"
+        message="Votre compte a été rechargé (simulation)."
+        details={
+          recharge !== null
+            ? [{ label: "Crédits ajoutés", valeur: `+ ${n(recharge)} crédits` }]
+            : []
+        }
+      />
+
+      <Toast toast={toast} onClose={fermerToast} />
     </main>
   );
 }

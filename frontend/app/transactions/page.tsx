@@ -1,74 +1,179 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { api, messageFromError } from "@/lib/api";
 import type { Transaction } from "@/lib/types";
+import NotificationBell from "@/components/NotificationBell";
+import NombreAnime from "@/components/NombreAnime";
+import Toast, { type ToastData } from "@/components/Toast";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api";
 
+const LIBELLES: Record<string, string> = {
+  en_attente: "En attente",
+  confirmee: "Confirmée",
+  annulee: "Annulée",
+  refusee: "Refusée",
+  echouee: "Échouée",
+};
+
+const libelleStatut = (statut: unknown) => {
+  const brut = String(statut);
+  return (
+    LIBELLES[brut] ??
+    brut.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())
+  );
+};
+
+const classeStatut = (statut: unknown) =>
+  String(statut)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-");
+
 export default function TransactionsPage() {
-  const { user, token, loading } = useAuth();
+  const { user, token, loading, refreshUser } = useAuth();
   const router = useRouter();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [error, setError] = useState("");
   const [fetching, setFetching] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [exportEnCours, setExportEnCours] = useState(false);
+  const [aAnnuler, setAAnnuler] = useState<Transaction | null>(null);
+  const [flashId, setFlashId] = useState<number | null>(null);
+  const [toast, setToast] = useState<ToastData>(null);
+
+  // On ne dépend que de ces valeurs simples : un refreshUser() ne doit pas
+  // relancer le chargement de la liste (et réafficher le spinner).
+  const connecte = Boolean(user);
+  const role = user?.role;
+
+  const notifier = useCallback(
+    (type: "succes" | "info" | "erreur", texte: string) =>
+      setToast({ id: Date.now(), type, texte }),
+    [],
+  );
+  const fermerToast = useCallback(() => setToast(null), []);
 
   useEffect(() => {
     if (loading) return;
 
-    if (!user) {
+    if (!connecte) {
       router.replace("/login");
       return;
     }
 
-    const path =
-      user.role === "producteur" ? "/mes-ventes" : "/mes-achats";
+    let annule = false;
+    const path = role === "producteur" ? "/mes-ventes" : "/mes-achats";
 
     setFetching(true);
     setError("");
 
     api<Transaction[]>(path, { token })
-      .then(setTransactions)
-      .catch((err) => setError(messageFromError(err)))
-      .finally(() => setFetching(false));
-  }, [loading, user, token, router]);
+      .then((resultat) => {
+        if (!annule) setTransactions(resultat);
+      })
+      .catch((err) => {
+        if (!annule) setError(messageFromError(err));
+      })
+      .finally(() => {
+        if (!annule) setFetching(false);
+      });
 
-  async function annuler(t: Transaction) {
-    if (!confirm("Annuler cette commande ? Vous serez remboursé.")) return;
+    return () => {
+      annule = true;
+    };
+  }, [loading, connecte, role, token, router]);
+
+  // Échap ferme la fenêtre de confirmation
+  useEffect(() => {
+    if (!aAnnuler) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && busyId === null) setAAnnuler(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [aAnnuler, busyId]);
+
+  async function confirmerAnnulation() {
+    const t = aAnnuler;
+    if (!t) return;
+
     setBusyId(t.id);
     setError("");
+
     try {
       await api(`/transactions/${t.id}/annuler`, { method: "POST", token });
-      setTransactions((prev) =>
-        prev.map((x) => (x.id === t.id ? { ...x, statut: "annulee" } : x)),
-      );
     } catch (err) {
       setError(messageFromError(err));
-    } finally {
       setBusyId(null);
+      setAAnnuler(null);
+      return;
+    }
+
+    setTransactions((prev) =>
+      prev.map((x) => (x.id === t.id ? { ...x, statut: "annulee" } : x)),
+    );
+    setAAnnuler(null);
+    setBusyId(null);
+    setFlashId(t.id);
+    setTimeout(() => setFlashId(null), 2000);
+    notifier("info", "Commande annulée. Vous avez été remboursé.");
+
+    // Les crédits ont changé : on met à jour le solde sans bloquer l'écran.
+    try {
+      await refreshUser();
+    } catch {
+      /* non bloquant */
     }
   }
 
+  // Télécharge un fichier protégé par le token, sous le nom donné
+  async function telecharger(chemin: string, nomFichier: string) {
+    const res = await fetch(`${API_URL}${chemin}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("echec");
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nomFichier;
+    a.click();
+    // Révocation différée : certains navigateurs annulent le téléchargement sinon.
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   async function telechargerRecu(t: Transaction) {
+    setError("");
     try {
-      const res = await fetch(`${API_URL}/transactions/${t.id}/recu`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `recu-transaction-${t.id}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await telecharger(
+        `/transactions/${t.id}/recu`,
+        `recu-transaction-${t.id}.pdf`,
+      );
+      notifier("succes", "Reçu téléchargé.");
     } catch {
       setError("Impossible de télécharger le reçu.");
+    }
+  }
+
+  async function exporterCsv() {
+    setError("");
+    setExportEnCours(true);
+    try {
+      const jour = new Date().toISOString().slice(0, 10);
+      await telecharger("/transactions/export", `transactions-${jour}.csv`);
+      notifier("succes", "Historique exporté en CSV.");
+    } catch {
+      setError("Impossible d’exporter l’historique.");
+    } finally {
+      setExportEnCours(false);
     }
   }
 
@@ -102,12 +207,23 @@ export default function TransactionsPage() {
         </Link>
 
         <nav className="transactions-nav" aria-label="Navigation principale">
-            <Link href="/dashboard">Tableau de bord</Link>
-            <Link href="/offres">Offres</Link>
-               {estProducteur && <Link href="/installation">Mon installation</Link>}
-               {estProducteur && <Link href="/commandes">Commandes</Link>}
+          <Link href="/dashboard">Tableau de bord</Link>
+          <Link href="/offres">Offres</Link>
+          {estProducteur && <Link href="/installation">Mon installation</Link>}
+          {estProducteur && <Link href="/commandes">Commandes</Link>}
         </nav>
-        
+
+        <div className="dashboard-actions">
+          <NotificationBell />
+          <Link
+            href="/profil"
+            className="notif-bell profil-link"
+            aria-label="Mon profil"
+            title="Mon profil"
+          >
+            <span aria-hidden="true">👤</span>
+          </Link>
+        </div>
       </header>
 
       <section className="transactions-content">
@@ -118,11 +234,26 @@ export default function TransactionsPage() {
             <p>Retrouvez ici l’historique de vos échanges d’énergie.</p>
           </div>
 
-          <div className="transactions-count">
-            <span>{transactions.length}</span>
-            <small>
-              {transactions.length === 1 ? "transaction" : "transactions"}
-            </small>
+          <div className="transactions-heading-actions">
+            {transactions.length > 0 && (
+              <button
+                type="button"
+                onClick={exporterCsv}
+                disabled={exportEnCours}
+                className="transactions-action-btn"
+              >
+                {exportEnCours ? "Export…" : "Exporter en CSV"}
+              </button>
+            )}
+
+            <div className="transactions-count">
+              <span>
+                <NombreAnime valeur={transactions.length} depuis={0} duree={700} />
+              </span>
+              <small>
+                {transactions.length === 1 ? "transaction" : "transactions"}
+              </small>
+            </div>
           </div>
         </div>
 
@@ -169,7 +300,14 @@ export default function TransactionsPage() {
                 </thead>
                 <tbody>
                   {transactions.map((transaction) => (
-                    <tr key={transaction.id}>
+                    <tr
+                      key={transaction.id}
+                      className={
+                        flashId === transaction.id
+                          ? "transaction-row-flash"
+                          : undefined
+                      }
+                    >
                       <td data-label="Date">
                         {new Date(transaction.created_at).toLocaleString(
                           "fr-FR",
@@ -191,14 +329,14 @@ export default function TransactionsPage() {
                         {transaction.prix_total} crédits
                       </td>
                       <td data-label="Statut">
+                        {/* key = statut : l'animation rejoue quand le statut change */}
                         <span
-                          className={`transactions-status transactions-status-${String(
+                          key={String(transaction.statut)}
+                          className={`transactions-status transactions-status-${classeStatut(
                             transaction.statut,
-                          )
-                            .toLowerCase()
-                            .replace(/[^a-z0-9]+/g, "-")}`}
+                          )}`}
                         >
-                          {transaction.statut}
+                          {libelleStatut(transaction.statut)}
                         </span>
                       </td>
                       <td data-label="Action">
@@ -206,7 +344,7 @@ export default function TransactionsPage() {
                           <button
                             type="button"
                             disabled={busyId === transaction.id}
-                            onClick={() => annuler(transaction)}
+                            onClick={() => setAAnnuler(transaction)}
                             className="transactions-action-btn"
                           >
                             Annuler
@@ -235,6 +373,50 @@ export default function TransactionsPage() {
           </>
         )}
       </section>
+
+      {aAnnuler && (
+        <div
+          className="confirm-overlay"
+          onClick={() => busyId === null && setAAnnuler(null)}
+        >
+          <div
+            className="confirm-carte"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-titre"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="confirm-icone" aria-hidden="true">
+              ↺
+            </div>
+            <h2 id="confirm-titre">Annuler cette commande ?</h2>
+            <p>
+              {aAnnuler.quantite_kwh} kWh · {aAnnuler.prix_total} crédits.
+              Vous serez remboursé.
+            </p>
+            <div className="confirm-actions">
+              <button
+                type="button"
+                className="confirm-non"
+                disabled={busyId !== null}
+                onClick={() => setAAnnuler(null)}
+              >
+                Garder
+              </button>
+              <button
+                type="button"
+                className="confirm-oui"
+                disabled={busyId !== null}
+                onClick={confirmerAnnulation}
+              >
+                {busyId !== null ? "Annulation…" : "Oui, annuler"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Toast toast={toast} onClose={fermerToast} />
     </main>
   );
 }

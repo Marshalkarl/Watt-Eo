@@ -1,12 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { api, messageFromError } from "@/lib/api";
 import type { Offre } from "@/lib/types";
 import { SOURCES, labelSource, iconSource } from "@/lib/sources";
+import AchatReussi from "@/components/AchatReussi";
+import NombreAnime from "@/components/NombreAnime";
 
 const OffresMap = dynamic(() => import("@/components/OffresMap"), {
   ssr: false,
@@ -17,6 +19,12 @@ const OffresMap = dynamic(() => import("@/components/OffresMap"), {
     </div>
   ),
 });
+
+type AchatSucces = {
+  producteur: string;
+  kwh: number;
+  total: number;
+};
 
 // Évite un appel au serveur à chaque touche tapée dans les filtres.
 function useDebounced<T>(value: T, delay = 400) {
@@ -47,8 +55,10 @@ function OffreCard({
   const [busy, setBusy] = useState(false);
 
   const q = Number(quantite);
-  const valide = Number.isFinite(q) && q > 0 && q <= offre.quantite_kwh;
-  const total = valide ? Math.round(q * offre.prix_kwh * 100) / 100 : 0;
+  const disponible = Number(offre.quantite_kwh);
+  const prix = Number(offre.prix_kwh);
+  const valide = Number.isFinite(q) && q > 0 && q <= disponible;
+  const total = valide ? Math.round(q * prix * 100) / 100 : 0;
 
   async function handleAcheter() {
     if (!valide || busy) return;
@@ -106,7 +116,7 @@ function OffreCard({
           </div>
         </div>
 
-        {offre.distance_km !== undefined && (
+        {offre.distance_km != null && (
           <div className="offre-distance">
             <span aria-hidden="true">⌖</span>
             {Number(offre.distance_km).toFixed(1)} km de vous
@@ -133,7 +143,7 @@ function OffreCard({
                 type="number"
                 min="0.1"
                 step="0.1"
-                max={offre.quantite_kwh}
+                max={disponible}
                 value={quantite}
                 onChange={(event) => setQuantite(event.target.value)}
               />
@@ -144,7 +154,8 @@ function OffreCard({
 
           <button
             type="button"
-            className="offre-buy-button"
+            className={`offre-buy-button${busy ? " is-loading" : ""}`}
+            aria-busy={busy}
             disabled={!valide || busy}
             onClick={handleAcheter}
           >
@@ -171,7 +182,7 @@ export default function OffresPage() {
   const [offres, setOffres] = useState<Offre[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+  const [succes, setSucces] = useState<AchatSucces | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(
     null,
@@ -179,7 +190,7 @@ export default function OffresPage() {
   const [rayon, setRayon] = useState("10");
   const [geoLoading, setGeoLoading] = useState(false);
 
-  // Filtres et tri (blocs 2 et 3)
+  // Filtres et tri
   const [prixMax, setPrixMax] = useState("");
   const [quantiteMin, setQuantiteMin] = useState("");
   const [tri, setTri] = useState("");
@@ -189,6 +200,29 @@ export default function OffresPage() {
   const filtresActifs = Boolean(prixMax || quantiteMin || tri || source);
 
   const estAdmin = user?.role === "admin";
+
+  // Numéro de la dernière requête : ignore les réponses arrivées en retard.
+  const requeteRef = useRef(0);
+
+  // Petite pulsation des crédits quand leur valeur change.
+  const credits = user ? Number(user.credits) : null;
+  const creditsPrecedents = useRef<number | null>(null);
+  const [creditsBump, setCreditsBump] = useState(false);
+
+  useEffect(() => {
+    if (credits === null) return;
+
+    const precedent = creditsPrecedents.current;
+    creditsPrecedents.current = credits;
+
+    if (precedent !== null && precedent !== credits) {
+      setCreditsBump(true);
+      const timer = setTimeout(() => setCreditsBump(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [credits]);
+
+  const fermerSucces = useCallback(() => setSucces(null), []);
 
   function reinitialiserFiltres() {
     setPrixMax("");
@@ -203,6 +237,7 @@ export default function OffresPage() {
   }
 
   const charger = useCallback(async () => {
+    const requete = ++requeteRef.current;
     const params = new URLSearchParams();
 
     if (position) {
@@ -218,13 +253,15 @@ export default function OffresPage() {
     const query = params.toString();
 
     try {
-      setError("");
       const result = await api<Offre[]>(`/offres${query ? `?${query}` : ""}`);
+      if (requete !== requeteRef.current) return;
+      setError("");
       setOffres(result);
     } catch (err) {
+      if (requete !== requeteRef.current) return;
       setError(messageFromError(err));
     } finally {
-      setLoading(false);
+      if (requete === requeteRef.current) setLoading(false);
     }
   }, [position, rayon, prixMaxD, quantiteMinD, tri, source]);
 
@@ -270,7 +307,7 @@ export default function OffresPage() {
   }
 
   async function acheter(offre: Offre, quantite: number) {
-    setMessage("");
+    setSucces(null);
     setError("");
 
     try {
@@ -279,11 +316,22 @@ export default function OffresPage() {
         token,
         body: { quantite_kwh: quantite },
       });
-
-      setMessage(`Achat confirmé : ${quantite} kWh.`);
-      await Promise.all([charger(), refreshUser()]);
     } catch (err) {
       setError(messageFromError(err));
+      return;
+    }
+
+    // L'achat a réussi : on célèbre tout de suite, puis on rafraîchit.
+    setSucces({
+      producteur: offre.producteur?.name ?? "le producteur",
+      kwh: quantite,
+      total: Math.round(quantite * Number(offre.prix_kwh) * 100) / 100,
+    });
+
+    try {
+      await Promise.all([charger(), refreshUser()]);
+    } catch {
+      // L'achat est déjà enregistré ; un échec de rafraîchissement n'est pas bloquant.
     }
   }
 
@@ -314,10 +362,10 @@ export default function OffresPage() {
           {user?.role === "producteur" && (
             <Link href="/installation">Mon installation</Link>
           )}
-          {user && !estAdmin && (
-            <span className="offres-credits">
+          {user && !estAdmin && credits !== null && (
+            <span className={`offres-credits${creditsBump ? " credits-bump" : ""}`}>
               <span aria-hidden="true">◈</span>
-              {user.credits} crédits
+              <NombreAnime valeur={credits} decimales={2} /> crédits
             </span>
           )}
         </nav>
@@ -466,13 +514,6 @@ export default function OffresPage() {
           )}
         </section>
 
-        {message && (
-          <div className="offres-notice offres-notice-success" role="status">
-            <span aria-hidden="true">✓</span>
-            {message}
-          </div>
-        )}
-
         {error && (
           <div className="offres-notice offres-notice-error" role="alert">
             <span aria-hidden="true">!</span>
@@ -550,6 +591,24 @@ export default function OffresPage() {
           )}
         </section>
       </div>
+
+      <AchatReussi
+        open={succes !== null}
+        onClose={fermerSucces}
+        message={
+          succes
+            ? `Votre commande auprès de ${succes.producteur} a bien été enregistrée.`
+            : undefined
+        }
+        details={
+          succes
+            ? [
+                { label: "Énergie", valeur: `${succes.kwh} kWh` },
+                { label: "Total", valeur: `${succes.total.toFixed(2)} crédits` },
+              ]
+            : []
+        }
+      />
     </main>
   );
 }

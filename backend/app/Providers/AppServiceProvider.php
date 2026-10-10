@@ -61,5 +61,9 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('ecriture', fn (Request $request) => Limit::perMinute(20)
             ->by($cle($request))
             ->response($trop('Trop de modifications en peu de temps. Patientez une minute.')));
+        
+        RateLimiter::for('profil', fn (Request $request) =>
+        Limit::perMinute(5)->by($request->user()?->id ?: $request->ip())
+        );
     }
 }

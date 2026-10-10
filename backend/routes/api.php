@@ -8,7 +8,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CompteurController;
 use App\Http\Controllers\EnergieController;
 use App\Http\Controllers\MarcheController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ProfilController;
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -19,6 +21,13 @@ Route::get('/offres', [OffreController::class, 'index']);
 Route::middleware(['auth:sanctum', 'actif'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::put('/profil', [ProfilController::class, 'update'])->middleware('throttle:ecriture');
+    Route::put('/profil/mot-de-passe', [ProfilController::class, 'changerMotDePasse'])->middleware('throttle:profil');
+    Route::delete('/profil', [ProfilController::class, 'supprimer'])->middleware('throttle:profil');
+
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/tout-lire', [NotificationController::class, 'toutLire']);
+    Route::post('/notifications/{id}/lue', [NotificationController::class, 'lire']);
 
     Route::get('/mes-offres', [OffreController::class, 'mesOffres']);
     Route::post('/offres', [OffreController::class, 'store'])->middleware('throttle:ecriture');
@@ -35,6 +44,8 @@ Route::middleware(['auth:sanctum', 'actif'])->group(function () {
     Route::get('/mes-mouvements', [TransactionController::class, 'mesMouvements']);
     Route::post('/recharger', [TransactionController::class, 'recharger'])->middleware('throttle:recharge');
     Route::get('/transactions/{transaction}/recu', [TransactionController::class, 'recu']);
+    Route::get('/transactions/export', [TransactionController::class, 'exporter']);
+    Route::get('/rapport-mensuel', [TransactionController::class, 'rapportMensuel']);
 
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
