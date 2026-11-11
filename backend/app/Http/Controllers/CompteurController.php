@@ -17,27 +17,28 @@ class CompteurController extends Controller
         return $request->user()->compteurs()->orderBy('id')->get();
     }
 
-   public function store(Request $request)
-{
-    $data = $request->validate([
-        'nom' => 'required|string|max:100',
-        'type' => 'required|in:production,consommation',
-        'source' => 'required_if:type,production|nullable|in:solaire,eolien,hydraulique,biomasse',
-        'puissance_kwc' => 'required_if:type,production|nullable|numeric|min:0.1|max:10000',
-    ]);
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'nom' => 'required|string|max:100',
+            'type' => 'required|in:production,consommation',
+            'source' => 'required_if:type,production|nullable|in:solaire,eolien,hydraulique,biomasse',
+            'puissance_kwc' => 'required_if:type,production|nullable|numeric|min:0.1|max:10000',
+        ]);
 
-    if ($data['type'] === 'consommation') {
-        $data['source'] = null;
-        $data['puissance_kwc'] = null;
+        if ($data['type'] === 'consommation') {
+            $data['source'] = null;
+            $data['puissance_kwc'] = null;
+        }
+
+        $compteur = $request->user()->compteurs()->create($data);
+
+        // Génère 30 jours de relevés simulés pour ce nouveau compteur
+        Artisan::call('energie:simuler', ['--jours' => 30, '--compteur' => $compteur->id]);
+
+        return response()->json($compteur, 201);
     }
 
-    $compteur = $request->user()->compteurs()->create($data);
-
-    // Génère 30 jours de relevés simulés pour ce nouveau compteur
-    Artisan::call('energie:simuler', ['--jours' => 30, '--compteur' => $compteur->id]);
-
-    return response()->json($compteur, 201);
-}
     // Historique agrégé : ?debut=2026-09-01&fin=2026-09-30&pas=jour|heure
     public function releves(Request $request, Compteur $compteur)
     {
@@ -55,14 +56,27 @@ class CompteurController extends Controller
             : $fin->copy()->subDays(7)->startOfDay();
         $pas = $data['pas'] ?? 'jour';
 
-        $format = $pas === 'heure' ? '%Y-%m-%d %H:00:00' : '%Y-%m-%d';
+        // Expression SQL compatible MySQL (local) et PostgreSQL (Render)
+        if (DB::getDriverName() === 'pgsql') {
+            $periodeSql = $pas === 'heure'
+                ? "to_char(releve_le, 'YYYY-MM-DD HH24:00:00')"
+                : "to_char(releve_le, 'YYYY-MM-DD')";
+        } else {
+            $format = $pas === 'heure' ? '%Y-%m-%d %H:00:00' : '%Y-%m-%d';
+            $periodeSql = "DATE_FORMAT(releve_le, '{$format}')";
+        }
 
         $lignes = $compteur->releves()
             ->whereBetween('releve_le', [$debut, $fin])
-            ->selectRaw("DATE_FORMAT(releve_le, '{$format}') as periode, ROUND(SUM(energie_kwh), 3) as energie_kwh")
+            ->selectRaw("{$periodeSql} as periode, ROUND(CAST(SUM(energie_kwh) AS DECIMAL(20,6)), 3) as energie_kwh")
             ->groupBy('periode')
             ->orderBy('periode')
             ->get();
+
+        // PostgreSQL renvoie les décimaux en texte : on force un nombre pour le JSON
+        $lignes->each(function ($ligne) {
+            $ligne->energie_kwh = (float) $ligne->energie_kwh;
+        });
 
         return [
             'compteur' => $compteur,
@@ -119,11 +133,11 @@ class CompteurController extends Controller
 
     public function destroy(Request $request, Compteur $compteur)
     {
-    abort_unless($compteur->user_id === $request->user()->id, 403);
+        abort_unless($compteur->user_id === $request->user()->id, 403);
 
-    $nom = $compteur->nom;
-    $compteur->delete();   // ses relevés sont supprimés en cascade
+        $nom = $compteur->nom;
+        $compteur->delete();   // ses relevés sont supprimés en cascade
 
-    return response()->json(['message' => "Compteur « {$nom} » supprimé."]);
+        return response()->json(['message' => "Compteur « {$nom} » supprimé."]);
     }
 }
