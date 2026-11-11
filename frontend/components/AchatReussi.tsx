@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 type Props = {
   open: boolean;
@@ -27,9 +28,9 @@ export default function AchatReussi({
     return () => clearTimeout(t);
   }, [open, onClose, dureeMs]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div className="achat-overlay" onClick={onClose} role="dialog" aria-live="polite">
       <div className="achat-confettis" aria-hidden="true">
         {Array.from({ length: 36 }).map((_, i) => (
@@ -72,6 +73,7 @@ export default function AchatReussi({
         </button>
         <div className="achat-progress" style={{ animationDuration: `${dureeMs}ms` }} />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -6000,7 +6000,7 @@ body {
 .achat-overlay {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: 9999;
   display: grid;
   place-items: center;
   padding: 20px;
@@ -6268,7 +6268,7 @@ body {
   position: fixed;
   right: 20px;
   bottom: 24px;
-  z-index: 300;
+  z-index: 9999;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -6313,11 +6313,16 @@ body {
   animation: achat-progress linear forwards;
 }
 
+.leaflet-container {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+}
 /* ---------- Fenêtre de confirmation ---------- */
 .confirm-overlay {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: 9999;
   display: grid;
   place-items: center;
   padding: 20px;
@@ -6526,3 +6531,170 @@ body {
 .mes-offres-status.is-visible .mes-offres-status-dot { animation: pulse-ring 2s ease-out infinite; }
 
 .mes-offres-summary-card strong { font-variant-numeric: tabular-nums; }
+
+/* ---------- Barre de filtres des offres ---------- */
+.offres-filtres {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px 20px;
+  margin-bottom: 28px;
+  padding: 20px 22px;
+  border: 1px solid #e7eee8;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(24 65 42 / 4%);
+}
+
+.filtre-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.filtre-label {
+  color: #30463a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.filtre-saisie,
+.filtre-select {
+  min-height: 44px;
+  border: 1px solid #dfe8e1;
+  border-radius: 10px;
+  background: #f8faf8;
+  color: #183526;
+  font: inherit;
+  font-size: 14px;
+  transition: border-color .2s, box-shadow .25s, background .2s;
+}
+
+.filtre-saisie {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+.filtre-saisie input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.filtre-saisie input::placeholder { color: #a4aea7; }
+
+.filtre-unite {
+  color: #849087;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.filtre-select {
+  width: 100%;
+  padding: 0 38px 0 12px;
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%2321834d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.filtre-saisie:focus-within,
+.filtre-select:focus {
+  border-color: #21834d;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgb(33 131 77 / 12%);
+  outline: none;
+}
+
+/* ---------- Filtres : prix, quantité, source, tri ---------- */
+.offres-toolbar-extra {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  align-items: end;
+  gap: 16px 20px;
+  margin-top: -12px;
+  padding: 20px 22px;
+}
+
+.offres-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.offres-field > label {
+  color: #30463a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.offres-field-input,
+.offres-field select {
+  min-height: 44px;
+  border: 1px solid #dfe8e1;
+  border-radius: 10px;
+  background: #f8faf8;
+  color: #183526;
+  font: inherit;
+  font-size: 14px;
+  transition: border-color .2s, box-shadow .25s, background-color .2s;
+}
+
+.offres-field-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+.offres-field-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.offres-field-input input::placeholder {
+  color: #a4aea7;
+}
+
+.offres-field-input span {
+  color: #849087;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.offres-field select {
+  width: 100%;
+  padding: 0 38px 0 12px;
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%2321834d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.offres-field-input:focus-within,
+.offres-field select:focus {
+  border-color: #21834d;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgb(33 131 77 / 12%);
+  outline: none;
+}
+
+.offres-toolbar-extra .offres-reset-button {
+  justify-self: start;
+}

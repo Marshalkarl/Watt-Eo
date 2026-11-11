@@ -4,19 +4,27 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        User::updateOrCreate(
-            ['email' => 'admin@watt-eo.test'],
+        $email = env('ADMIN_EMAIL');
+        $password = env('ADMIN_PASSWORD');
+
+        if (!$email || !$password) {
+            return;
+        }
+
+        User::firstOrCreate(
+            ['email' => $email],
             [
                 'name'     => 'Administrateur Watt-Eo',
-                'password' => 'Admin12345',   // démo uniquement
+                'password' => Hash::make($password),
                 'role'     => 'admin',
                 'credits'  => 0,
-            ],
+            ]
         );
     }
 }
