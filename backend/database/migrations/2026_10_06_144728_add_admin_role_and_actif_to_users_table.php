@@ -9,7 +9,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE users MODIFY role ENUM('producteur','consommateur','admin') NOT NULL DEFAULT 'consommateur'");
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check');
+            DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role::text IN ('producteur','consommateur','admin'))");
+        } else {
+            DB::statement("ALTER TABLE users MODIFY role ENUM('producteur','consommateur','admin') NOT NULL DEFAULT 'consommateur'");
+        }
 
         Schema::table('users', function (Blueprint $table) {
             $table->boolean('actif')->default(true)->after('credits');
@@ -24,6 +29,11 @@ return new class extends Migration
             $table->dropColumn('actif');
         });
 
-        DB::statement("ALTER TABLE users MODIFY role ENUM('producteur','consommateur') NOT NULL DEFAULT 'consommateur'");
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check');
+            DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role::text IN ('producteur','consommateur'))");
+        } else {
+            DB::statement("ALTER TABLE users MODIFY role ENUM('producteur','consommateur') NOT NULL DEFAULT 'consommateur'");
+        }
     }
 };
